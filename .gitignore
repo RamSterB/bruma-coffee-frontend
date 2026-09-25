@@ -15,3 +15,5 @@ dist
 # caché de instalación dentro del repo (no commitear)
 .pnpm-store
 .pnpm-store/**
+# Reporte de cobertura generado por Vitest
+coverage/

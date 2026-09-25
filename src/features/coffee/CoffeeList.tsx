@@ -1,5 +1,8 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
+import { ErrorState } from '../../components/ErrorState'
+import { LoadingState } from '../../components/LoadingState'
+import { formatCop } from '../../lib/formatCurrency'
 import { fetchCoffees } from './coffeeSlice'
 
 export function CoffeeList() {
@@ -10,24 +13,25 @@ export function CoffeeList() {
     void dispatch(fetchCoffees())
   }, [dispatch])
 
+  const retry = useCallback(() => {
+    void dispatch(fetchCoffees())
+  }, [dispatch])
+
   if (loading) {
-    return <p className="text-amber-200">Cargando cafés...</p>
+    return <LoadingState message="Cargando cafés" />
   }
 
   if (error) {
-    return <p className="text-red-400">Error: {error}</p>
+    return <ErrorState message={error} onRetry={retry} />
   }
 
   return (
     <ul className="w-full max-w-md space-y-3">
       {items.map((coffee) => (
-        <li
-          key={coffee.id}
-          className="rounded-xl border border-amber-800 bg-amber-900/30 p-4"
-        >
+        <li key={coffee.id} className="rounded-xl border border-amber-800 bg-amber-900/30 p-4">
           <h3 className="text-lg font-semibold text-amber-100">{coffee.name}</h3>
           <p className="text-sm text-amber-300">{coffee.region}</p>
-          <p className="mt-1 text-amber-200">${coffee.price.toFixed(2)}</p>
+          <p className="mt-1 text-amber-200">{formatCop(coffee.price)}</p>
         </li>
       ))}
     </ul>
