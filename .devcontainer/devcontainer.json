@@ -1,0 +1,47 @@
+{
+    "name": "Bruma Coffee Frontend Dev",
+    "build": { "dockerfile": "Dockerfile" },
+    "workspaceFolder": "/workspace",
+
+    "runArgs": [
+        "-p",
+        "5173:5173",
+        "--add-host=host.docker.internal:host-gateway",
+        "--network=brumacoffeenet",
+        "--name=bruma-coffee-frontend"
+    ],
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "GitHub.copilot",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "bradlc.vscode-tailwindcss",
+                "dsznajder.es7-react-js-snippets",
+                "usernamehw.errorlens",
+                "postman.postman-for-vscode",
+                "eamodio.gitlens",
+                "formulahendry.auto-rename-tag",
+                "ms-vscode.vscode-typescript-next"
+            ]
+        }
+    },
+
+    "remoteUser": "node",
+
+    "containerEnv": {
+        "VITE_API_URL": "http://host.docker.internal:8000"
+    },
+
+    "forwardPorts": [5173],
+
+    "postCreateCommand": "git config --global --add safe.directory /workspace && git config --global user.name ramsterb && git config --global user.email joseluisramosa337@gmail.com && pnpm install",
+
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+        "source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,type=bind"
+    ],
+
+    "features": {}
+}

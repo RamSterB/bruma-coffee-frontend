@@ -1,0 +1,17 @@
+node_modules
+dist
+*.local
+.env
+.env.local
+.DS_Store
+*.tsbuildinfo
+
+# .vscode (solo se commitea settings.json)
+.vscode/*
+!.vscode/settings.json
+
+# .devcontainer/ se COMMITEA a propósito (entorno reproducible)
+
+# caché de instalación dentro del repo (no commitear)
+.pnpm-store
+.pnpm-store/**
