@@ -1,3 +1,5 @@
+import { Alert, Button } from '@mui/material'
+
 export interface ErrorStateProps {
   message: string
   onRetry?: () => void
@@ -5,17 +7,19 @@ export interface ErrorStateProps {
 
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
-    <div role="alert" className="text-red-400">
-      <p>{message}</p>
-      {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-2 rounded-lg border border-red-700 px-3 py-1 text-sm"
-        >
-          Reintentar
-        </button>
-      )}
-    </div>
+    <Alert
+      role="alert"
+      severity="error"
+      className="w-full max-w-2xl"
+      action={
+        onRetry ? (
+          <Button color="inherit" size="small" onClick={onRetry}>
+            Reintentar
+          </Button>
+        ) : undefined
+      }
+    >
+      {message}
+    </Alert>
   )
 }
