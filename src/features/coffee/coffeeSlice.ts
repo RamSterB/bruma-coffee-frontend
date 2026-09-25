@@ -1,4 +1,6 @@
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { ApiError } from '../../app/api/ApiError'
+import { httpClient } from '../../app/api/httpClient'
 
 export interface Coffee {
   id: number
@@ -7,7 +9,7 @@ export interface Coffee {
   price: number
 }
 
-interface CoffeeState {
+export interface CoffeeState {
   items: Coffee[]
   loading: boolean
   error: string | null
@@ -19,15 +21,27 @@ const initialState: CoffeeState = {
   error: null,
 }
 
-export const fetchCoffees = createAsyncThunk<Coffee[], void>('coffee/fetchCoffees', async () => {
-  const response = await fetch('/api/coffee')
-
-  if (!response.ok) {
-    throw new Error(`Error al obtener cafés: ${response.status}`)
+const toMessage = (error: unknown): string => {
+  if (error instanceof ApiError) {
+    return error.message
   }
 
-  return (await response.json()) as Coffee[]
-})
+  return 'Ocurrió un error inesperado'
+}
+
+export const fetchCoffees = createAsyncThunk<Coffee[], void, { state: { coffee: CoffeeState } }>(
+  'coffee/fetchCoffees',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await httpClient.get<Coffee[]>('/coffee')
+    } catch (error) {
+      return rejectWithValue(toMessage(error))
+    }
+  },
+  {
+    condition: (_, { getState }) => !getState().coffee.loading,
+  },
+)
 
 export const coffeeSlice = createSlice({
   name: 'coffee',
@@ -43,13 +57,13 @@ export const coffeeSlice = createSlice({
         state.loading = true
         state.error = null
       })
-      .addCase(fetchCoffees.fulfilled, (state, action: PayloadAction<Coffee[]>) => {
+      .addCase(fetchCoffees.fulfilled, (state, action) => {
         state.loading = false
         state.items = action.payload
       })
       .addCase(fetchCoffees.rejected, (state, action) => {
         state.loading = false
-        state.error = action.error.message ?? 'Error desconocido'
+        state.error = (action.payload as string | undefined) ?? 'Error desconocido'
       })
   },
 })

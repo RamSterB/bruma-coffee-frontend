@@ -3,9 +3,16 @@ import { coffeeSlice } from '../features/coffee/coffeeSlice'
 
 export const rootReducer = combineSlices(coffeeSlice)
 
-export const store = configureStore({
-  reducer: rootReducer,
-})
+export const createStore = (preloadedState?: Partial<ReturnType<typeof rootReducer>>) =>
+  configureStore({
+    reducer: rootReducer,
+    preloadedState: preloadedState as ReturnType<typeof rootReducer> | undefined,
+  })
 
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+export const createTestStore = () => createStore()
+
+export const store = createStore()
+
+export type AppStore = ReturnType<typeof createStore>
+export type RootState = ReturnType<typeof rootReducer>
+export type AppDispatch = AppStore['dispatch']
