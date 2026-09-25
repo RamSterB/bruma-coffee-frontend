@@ -102,6 +102,63 @@ describe('httpClient', () => {
     const [, init] = fetchMock.mock.calls[0]
     expect(new Headers(init?.headers).has('Authorization')).toBe(false)
   })
+
+  it('normaliza una ruta sin barra inicial', async () => {
+    fetchMock.mockResolvedValue(jsonResponse([]))
+
+    await httpClient.get('coffee')
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/coffee', expect.anything())
+  })
+
+  it('une varios mensajes de validación en uno solo', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ message: ['name debe ser string', 'price debe ser número'] }, { status: 400 }),
+    )
+
+    await expect(httpClient.post('/coffee', {})).rejects.toThrow(
+      'name debe ser string, price debe ser número',
+    )
+  })
+
+  it('usa el mensaje por defecto si el campo message viene vacío', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ message: '' }, { status: 400 }))
+
+    await expect(httpClient.get('/coffee')).rejects.toThrow('Error 400')
+  })
+
+  it('re-lanza un aborto en vez de convertirlo en ApiError', async () => {
+    const abortError = new DOMException('La operación fue abortada', 'AbortError')
+    fetchMock.mockRejectedValue(abortError)
+
+    await expect(httpClient.get('/coffee')).rejects.toBe(abortError)
+  })
+
+  it('propaga la señal de aborto al fetch', async () => {
+    fetchMock.mockResolvedValue(jsonResponse([]))
+    const controller = new AbortController()
+
+    await httpClient.get('/coffee', { signal: controller.signal })
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(init?.signal).toBe(controller.signal)
+  })
+
+  it('envía PUT con su cuerpo', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 1 }))
+
+    await httpClient.put('/cart/items/1', { quantity: 2 })
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/cart/items/1', expect.objectContaining({ method: 'PUT' }))
+  })
+
+  it('envía PATCH con su cuerpo', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 1 }))
+
+    await httpClient.patch('/profile', { name: 'Ana' })
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/profile', expect.objectContaining({ method: 'PATCH' }))
+  })
 })
 
 interface CoffeeDto {

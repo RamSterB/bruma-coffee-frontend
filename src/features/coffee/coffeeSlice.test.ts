@@ -77,4 +77,33 @@ describe('coffeeSlice', () => {
 
     expect(store.getState().coffee.error).toBeNull()
   })
+
+  it('muestra un mensaje genérico si el fallo no es un ApiError', async () => {
+    getMock.mockRejectedValue(new TypeError('Failed to fetch'))
+
+    const store = createTestStore()
+    await store.dispatch(fetchCoffees())
+
+    expect(store.getState().coffee.error).toBe('Ocurrió un error inesperado')
+  })
+
+  it('no lanza una segunda petición mientras la primera sigue en curso', async () => {
+    let resolveRequest: (value: unknown) => void = () => undefined
+    getMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve
+      }),
+    )
+    const store = createTestStore()
+
+    const first = store.dispatch(fetchCoffees())
+    const second = store.dispatch(fetchCoffees())
+
+    expect(getMock).toHaveBeenCalledTimes(1)
+    expect(store.getState().coffee.loading).toBe(true)
+
+    resolveRequest([])
+    await Promise.all([first, second])
+    expect(getMock).toHaveBeenCalledTimes(1)
+  })
 })
