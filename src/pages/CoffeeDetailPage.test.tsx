@@ -1,18 +1,19 @@
 import { render, screen, waitForElementToBeRemoved } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jest, beforeEach, describe, expect, it } from '@jest/globals'
 import { ApiError } from '../app/api/ApiError'
 import { httpClient } from '../app/api/httpClient'
 import { createTestStore } from '../app/store'
 import { CoffeeDetailPage } from './CoffeeDetailPage'
 import type { Coffee } from '../features/coffee/types'
 
-vi.mock('../app/api/httpClient', () => ({
-  httpClient: { get: vi.fn() },
+jest.mock('../app/api/httpClient', () => ({
+  httpClient: { get: jest.fn() },
 }))
 
-const getMock = vi.mocked(httpClient.get)
+const getMock = jest.mocked(httpClient.get)
 
 const buildCoffee = (id = 'cafe-1'): Coffee => ({
   id,
@@ -91,7 +92,6 @@ describe('CoffeeDetailPage', () => {
   })
 
   it('reintenta la carga cuando se pulsa reintentar', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
     getMock.mockRejectedValueOnce(new ApiError('No se pudo conectar con el servidor', 0))
 

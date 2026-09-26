@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jest, beforeEach, describe, expect, it } from '@jest/globals'
 import { createStore } from './store'
 import { addItem, resolveCart, selectCartCount, selectCartLines } from '../features/cart/cartSlice'
 import { CART_SCHEMA_VERSION, CART_STORAGE_KEY } from '../features/cart/cartStorage'
@@ -33,7 +33,7 @@ describe('carrito persistido', () => {
 
   it('no escribe nada mientras el carrito no cambia', () => {
     escribir({ version: CART_SCHEMA_VERSION, items: [{ variantId: 'v1', quantity: 1 }] })
-    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    const setItem = jest.spyOn(Storage.prototype, 'setItem')
     const store = createStore()
 
     store.dispatch(resolveCart.pending('d', undefined))

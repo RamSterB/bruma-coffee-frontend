@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { jest, afterEach, beforeEach, describe, expect, it } from '@jest/globals'
 import { ApiError } from './ApiError'
 import { httpClient } from './httpClient'
 
@@ -10,15 +10,27 @@ const jsonResponse = (body: unknown, init: ResponseInit = {}) =>
   })
 
 describe('httpClient', () => {
-  const fetchMock = vi.fn<typeof fetch>()
+  const fetchMock = jest.fn<typeof fetch>()
+
+  // Jest no tiene `stubGlobal`. Se guarda el valor original y se restaura al final,
+  // que es exactamente lo que hacía `vi.stubGlobal` / `vi.unstubAllGlobals`.
+  const originalFetch = globalThis.fetch
 
   beforeEach(() => {
     fetchMock.mockReset()
-    vi.stubGlobal('fetch', fetchMock)
+    Object.defineProperty(globalThis, 'fetch', {
+      value: fetchMock,
+      writable: true,
+      configurable: true,
+    })
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
+    Object.defineProperty(globalThis, 'fetch', {
+      value: originalFetch,
+      writable: true,
+      configurable: true,
+    })
   })
 
   it('devuelve el cuerpo JSON de una respuesta exitosa', async () => {
