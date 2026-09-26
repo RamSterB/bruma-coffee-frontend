@@ -1,21 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jest, beforeEach, describe, expect, it } from '@jest/globals'
 import { CART_SCHEMA_VERSION, CART_STORAGE_KEY, loadCart, saveCart } from './cartStorage'
 
 const almacenamientoFalso = (): Storage => {
   let datos: string | null = null
 
   return {
-    getItem: vi.fn(() => datos),
-    setItem: vi.fn((_clave: string, valor: string) => {
+    getItem: jest.fn(() => datos),
+    setItem: jest.fn((_clave: string, valor: string) => {
       datos = valor
     }),
-    removeItem: vi.fn(() => {
+    removeItem: jest.fn(() => {
       datos = null
     }),
-    clear: vi.fn(() => {
+    clear: jest.fn(() => {
       datos = null
     }),
-    key: vi.fn(() => null),
+    key: jest.fn(() => null),
     length: 1,
   } as unknown as Storage
 }

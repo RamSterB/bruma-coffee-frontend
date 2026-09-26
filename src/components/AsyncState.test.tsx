@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { jest, describe, expect, it } from '@jest/globals'
 import { ErrorState } from './ErrorState'
 import { LoadingState } from './LoadingState'
 
@@ -27,7 +27,7 @@ describe('ErrorState', () => {
   })
 
   it('invoca onRetry cuando se pulsa reintentar', async () => {
-    const onRetry = vi.fn()
+    const onRetry = jest.fn()
     const user = userEvent.setup()
     render(<ErrorState message="Fallo" onRetry={onRetry} />)
 

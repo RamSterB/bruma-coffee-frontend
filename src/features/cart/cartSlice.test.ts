@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from '@jest/globals'
 import { cartReducer, resolveCart } from './cartSlice'
 import type { CartState } from './cartSlice'
 import type { CartVariant } from './types'

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from '@jest/globals'
 import { coffeeDetailReducer, fetchCoffeeById } from './coffeeDetailSlice'
 import type { CoffeeDetailState } from './coffeeDetailSlice'
 
@@ -6,12 +6,12 @@ const estadoInicial = coffeeDetailReducer(undefined, { type: 'desconocida' })
 
 describe('coffeeDetailSlice', () => {
   it('arranca sin café cargado, sin cargando y sin error', () => {
-    expect(estadoInicial).toEqual<CoffeeDetailState>({
+    expect(estadoInicial).toEqual({
       item: null,
       loading: false,
       error: null,
       notFound: false,
-    })
+    } satisfies CoffeeDetailState)
   })
 
   it('al pedir un café pasa a cargando y limpia el error anterior', () => {
@@ -24,12 +24,12 @@ describe('coffeeDetailSlice', () => {
 
     const estado = coffeeDetailReducer(conError, { type: fetchCoffeeById.pending.type })
 
-    expect(estado).toEqual<CoffeeDetailState>({
+    expect(estado).toEqual({
       item: null,
       loading: true,
       error: null,
       notFound: false,
-    })
+    } satisfies CoffeeDetailState)
   })
 
   it('guarda el café cuando la petición se resuelve', () => {

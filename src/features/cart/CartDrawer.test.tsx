@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { jest, describe, expect, it } from '@jest/globals'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
@@ -10,11 +10,11 @@ import { formatCop } from '../../lib/formatCurrency'
 import { hydrateCart } from './cartSlice'
 import type { CartItem, CartVariant } from './types'
 
-vi.mock('../../app/api/httpClient', () => ({
-  httpClient: { get: vi.fn(), post: vi.fn() },
+jest.mock('../../app/api/httpClient', () => ({
+  httpClient: { get: jest.fn(), post: jest.fn() },
 }))
 
-const get = vi.mocked(httpClient.get)
+const get = jest.mocked(httpClient.get)
 
 /**
  * El formateador separa el símbolo del número con un espacio duro, y el

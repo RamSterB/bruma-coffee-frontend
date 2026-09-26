@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jest, beforeEach, describe, expect, it } from '@jest/globals'
 import { AppRoutes } from './AppRoutes'
 import { httpClient } from './api/httpClient'
 import { createTestStore } from './store'
@@ -16,11 +16,11 @@ const renderAt = (path: string) =>
     </Provider>,
   )
 
-vi.mock('./api/httpClient', () => ({
-  httpClient: { get: vi.fn() },
+jest.mock('./api/httpClient', () => ({
+  httpClient: { get: jest.fn() },
 }))
 
-const getMock = vi.mocked(httpClient.get)
+const getMock = jest.mocked(httpClient.get)
 
 const cafe: Coffee = {
   id: 'cafe-1',
