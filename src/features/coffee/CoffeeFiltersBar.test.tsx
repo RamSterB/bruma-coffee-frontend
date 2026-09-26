@@ -82,7 +82,9 @@ describe('CoffeeFiltersBar', () => {
     )
     expect(screen.queryByRole('button', { name: /limpiar/i })).not.toBeInTheDocument()
 
-    rerender(<CoffeeFiltersBar filters={{ region: 'huila' }} onChange={vi.fn()} onSearch={vi.fn()} />)
+    rerender(
+      <CoffeeFiltersBar filters={{ region: 'huila' }} onChange={vi.fn()} onSearch={vi.fn()} />,
+    )
     expect(screen.getByRole('button', { name: /limpiar/i })).toBeInTheDocument()
   })
 })

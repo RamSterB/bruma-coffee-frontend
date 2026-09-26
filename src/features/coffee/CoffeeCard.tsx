@@ -3,7 +3,11 @@ import { formatCop } from '../../lib/formatCurrency'
 import type { Coffee, CoffeeVariant } from './types'
 
 const VariantRow = ({ variant }: { variant: CoffeeVariant }) => (
-  <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+  <Stack
+    direction="row"
+    spacing={2}
+    sx={{ justifyContent: 'space-between', alignItems: 'baseline' }}
+  >
     <Typography variant="body2" color="text.secondary">
       {variant.weightGrams} g
     </Typography>
