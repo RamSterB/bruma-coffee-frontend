@@ -50,7 +50,9 @@ describe('CheckoutPage', () => {
 
     renderCheckout('?coffee=cafe-1&variant=var-250')
 
-    expect(await screen.findByText(/el checkout llega en un próximo incremento/i)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/el checkout llega en un próximo incremento/i),
+    ).toBeInTheDocument()
   })
 
   it('muestra el café y la variante elegida para comprar', async () => {

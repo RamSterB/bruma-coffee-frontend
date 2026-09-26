@@ -80,7 +80,9 @@ export function CoffeeList() {
 
       <Backdrop open={loading} data-testid="catalog-backdrop">
         <CircularProgress color="primary" aria-label="Cargando cafés" />
-        <Typography className="absolute top-[calc(50%+3rem)] text-neutral-300">Cargando cafés</Typography>
+        <Typography className="absolute top-[calc(50%+3rem)] text-neutral-300">
+          Cargando cafés
+        </Typography>
       </Backdrop>
     </Stack>
   )

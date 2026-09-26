@@ -5,13 +5,13 @@ Frontend de **Bruma Coffee**. Aplicación SPA construida con **React**, **Vite**
 
 ## Stack
 
-| Capa | Tecnología |
-|---|---|
-| UI | React 19 + TypeScript |
-| Build | Vite 8 |
-| Estilos | Tailwind CSS v4 (plugin `@tailwindcss/vite`) |
-| Estado | Redux Toolkit (slices, actions, thunks) + react-redux |
-| Gestor de paquetes | pnpm 10.28.0 (corepack, versión fija) |
+| Capa               | Tecnología                                            |
+| ------------------ | ----------------------------------------------------- |
+| UI                 | React 19 + TypeScript                                 |
+| Build              | Vite 8                                                |
+| Estilos            | Tailwind CSS v4 (plugin `@tailwindcss/vite`)          |
+| Estado             | Redux Toolkit (slices, actions, thunks) + react-redux |
+| Gestor de paquetes | pnpm 10.28.0 (corepack, versión fija)                 |
 
 > **Nota pnpm (importante):** la versión está **fijada a `10.28.0`** en los tres entornos
 > (local, devcontainer y `"packageManager"` de `package.json`) porque el lockfile se genera con esa
@@ -58,8 +58,8 @@ Desde Windows: **File → Open Folder** sobre esta carpeta y luego **Reopen in C
 Copia `cp .env.example .env` si vas a ejecutar fuera del contenedor. El devcontainer ya
 inyecta las variables vía `containerEnv`.
 
-| Variable | Descripción | Default |
-|---|---|---|
+| Variable       | Descripción                                                       | Default                            |
+| -------------- | ----------------------------------------------------------------- | ---------------------------------- |
 | `VITE_API_URL` | URL base de la API. En dev es el target del proxy `/api` de Vite. | `http://host.docker.internal:8000` |
 
 > El proxy `/api` es **solo para desarrollo**. En producción `VITE_API_URL` se inyecta en
@@ -76,10 +76,10 @@ pnpm lint       # eslint
 
 ## Acceso desde Windows
 
-| Servicio | URL |
-|---|---|
-| Frontend (Vite) | `http://localhost:5173` |
-| API (proxy `/api`) | `http://localhost:5173/api` |
+| Servicio            | URL                              |
+| ------------------- | -------------------------------- |
+| Frontend (Vite)     | `http://localhost:5173`          |
+| API (proxy `/api`)  | `http://localhost:5173/api`      |
 | Swagger del backend | `http://localhost:8000/api/docs` |
 
 ## Despliegue

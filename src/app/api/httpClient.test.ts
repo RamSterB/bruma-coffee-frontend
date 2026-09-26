@@ -24,7 +24,9 @@ describe('httpClient', () => {
   it('devuelve el cuerpo JSON de una respuesta exitosa', async () => {
     fetchMock.mockResolvedValue(jsonResponse([{ id: 1, name: 'Geisha' }]))
 
-    await expect(httpClient.get<CoffeeDto[]>('/coffee')).resolves.toEqual([{ id: 1, name: 'Geisha' }])
+    await expect(httpClient.get<CoffeeDto[]>('/coffee')).resolves.toEqual([
+      { id: 1, name: 'Geisha' },
+    ])
   })
 
   it('envía la ruta dentro del prefijo /api', async () => {
@@ -47,9 +49,7 @@ describe('httpClient', () => {
   })
 
   it('lanza ApiError con el status en un error del servidor', async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse({ message: 'No encontrado' }, { status: 404 }),
-    )
+    fetchMock.mockResolvedValue(jsonResponse({ message: 'No encontrado' }, { status: 404 }))
 
     await expect(httpClient.get('/coffee/99')).rejects.toMatchObject({
       name: 'ApiError',
@@ -149,7 +149,10 @@ describe('httpClient', () => {
 
     await httpClient.put('/cart/items/1', { quantity: 2 })
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/cart/items/1', expect.objectContaining({ method: 'PUT' }))
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/cart/items/1',
+      expect.objectContaining({ method: 'PUT' }),
+    )
   })
 
   it('envía PATCH con su cuerpo', async () => {
@@ -157,7 +160,10 @@ describe('httpClient', () => {
 
     await httpClient.patch('/profile', { name: 'Ana' })
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/profile', expect.objectContaining({ method: 'PATCH' }))
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/profile',
+      expect.objectContaining({ method: 'PATCH' }),
+    )
   })
 })
 

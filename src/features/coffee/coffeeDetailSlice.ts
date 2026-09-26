@@ -71,7 +71,7 @@ export const coffeeDetailSlice = createSlice({
         state.item = null
         state.notFound = action.payload?.notFound ?? false
         // un 404 no es un error: la ficha lo muestra como "no encontrado"
-        state.error = state.notFound ? null : action.payload?.message ?? UNEXPECTED_MESSAGE
+        state.error = state.notFound ? null : (action.payload?.message ?? UNEXPECTED_MESSAGE)
       })
   },
 })

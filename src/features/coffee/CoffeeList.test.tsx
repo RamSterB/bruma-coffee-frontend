@@ -90,9 +90,7 @@ describe('CoffeeList', () => {
     finish()
 
     expect(await screen.findByRole('heading', { name: 'Geisha del Huila' })).toBeInTheDocument()
-    await waitFor(() =>
-      expect(screen.getByTestId('catalog-backdrop')).not.toBeVisible(),
-    )
+    await waitFor(() => expect(screen.getByTestId('catalog-backdrop')).not.toBeVisible())
   })
 
   it('mantiene la grilla visible detrás del Backdrop al cambiar de filtro', async () => {
@@ -138,7 +136,9 @@ describe('CoffeeList', () => {
     getMock.mockResolvedValue(buildPage())
 
     renderList()
-    await userEvent.click(await screen.findByRole('button', { name: /detalle de Geisha del Huila/i }))
+    await userEvent.click(
+      await screen.findByRole('button', { name: /detalle de Geisha del Huila/i }),
+    )
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('Lote de altura del sur de Huila.')).toBeInTheDocument()
@@ -148,7 +148,9 @@ describe('CoffeeList', () => {
   it('cierra el detalle con el botón de cerrar', async () => {
     getMock.mockResolvedValue(buildPage())
     renderList()
-    await userEvent.click(await screen.findByRole('button', { name: /detalle de Geisha del Huila/i }))
+    await userEvent.click(
+      await screen.findByRole('button', { name: /detalle de Geisha del Huila/i }),
+    )
     await screen.findByRole('dialog')
 
     await userEvent.click(screen.getByRole('button', { name: /cerrar/i }))
@@ -159,7 +161,9 @@ describe('CoffeeList', () => {
   it('cierra el detalle con la tecla Escape', async () => {
     getMock.mockResolvedValue(buildPage())
     renderList()
-    await userEvent.click(await screen.findByRole('button', { name: /detalle de Geisha del Huila/i }))
+    await userEvent.click(
+      await screen.findByRole('button', { name: /detalle de Geisha del Huila/i }),
+    )
     await screen.findByRole('dialog')
 
     await userEvent.keyboard('{Escape}')

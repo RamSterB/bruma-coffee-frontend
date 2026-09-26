@@ -22,9 +22,7 @@ const buildPage = (overrides: Partial<PaginatedCoffees> = {}): PaginatedCoffees 
       region: 'huila',
       tastingNotes: ['jasmín'],
       priceFrom: 48000,
-      variants: [
-        { id: 'v-1', weightGrams: 250, price: 48000, stock: 24, isActive: true },
-      ],
+      variants: [{ id: 'v-1', weightGrams: 250, price: 48000, stock: 24, isActive: true }],
       createdAt: '2026-09-25T00:00:00.000Z',
       updatedAt: '2026-09-25T00:00:00.000Z',
     },

@@ -14,7 +14,13 @@ describe('buildCoffeeQuery', () => {
 
   it('incluye proceso, tueste y búsqueda a la vez', () => {
     expect(
-      buildCoffeeQuery({ process: 'natural', roastLevel: 'light', search: 'geisha', page: 2, limit: 6 }),
+      buildCoffeeQuery({
+        process: 'natural',
+        roastLevel: 'light',
+        search: 'geisha',
+        page: 2,
+        limit: 6,
+      }),
     ).toBe('?process=natural&roastLevel=light&search=geisha&page=2&limit=6')
   })
 
@@ -25,8 +31,8 @@ describe('buildCoffeeQuery', () => {
   })
 
   it('omite los filtros vacíos en lugar de mandarlos como cadena vacía', () => {
-    expect(buildCoffeeQuery({ region: undefined, process: undefined, search: '  ', page: 1, limit: 12 })).toBe(
-      '?page=1&limit=12',
-    )
+    expect(
+      buildCoffeeQuery({ region: undefined, process: undefined, search: '  ', page: 1, limit: 12 }),
+    ).toBe('?page=1&limit=12')
   })
 })
