@@ -68,11 +68,75 @@ inyecta las variables vía `containerEnv`.
 ## Comandos
 
 ```bash
-pnpm dev        # servidor Vite en 0.0.0.0:5173
-pnpm build      # tsc -b && vite build (salida en dist/)
-pnpm preview    # preview del build
-pnpm lint       # eslint
+pnpm dev            # servidor Vite en 0.0.0.0:5173
+pnpm build          # tsc -b && vite build (salida en dist/)
+pnpm preview        # preview del build
+pnpm format         # prettier --write
+pnpm format:check   # prettier --check (lo exige CI)
+pnpm lint           # eslint
+pnpm typecheck      # tsc --noEmit
+pnpm test           # jest
+pnpm test:cov       # jest con cobertura
+pnpm audit          # auditoría de dependencias
 ```
+
+## Arquitectura
+
+```
+src/
+├── app/          store, hooks tipados, cliente HTTP, rutas
+├── components/   layout de la app (barra, contador, cajón)
+├── features/
+│   ├── cart/     slice, persistencia, cajón lateral
+│   └── coffee/   catálogo, filtros, ficha, variantes
+├── lib/          utilidades puras (formato de moneda, etc.)
+├── pages/        una por ruta
+└── test/         configuración común de tests
+```
+
+El estado vive en **Redux Toolkit** con un store único, siguiendo el flujo de Flux: los
+componentes despachan acciones, los reductores son puros, el estado derivado se lee con
+selectores y los efectos secundarios van en thunks. Nada de estado de dominio en `useState`: el
+`useState` que queda es para estado efímero de la vista, como qué panel está abierto.
+
+El carrito es la excepción que explica el diseño: en `localStorage` solo se guarda el
+identificador de la variante y la cantidad. El precio y el stock los pone la API al abrir el
+cajón, para que lo que se ve y lo que se cobra no puedan separarse.
+
+## Cobertura
+
+```bash
+pnpm test:cov
+```
+
+| Indicador  | Cobertura | Umbral de CI |
+| ---------- | --------- | ------------ |
+| Statements | 96.5 %    | 86 %         |
+| Branches   | 91.0 %    | 86 %         |
+| Functions  | 95.0 %    | 86 %         |
+| Lines      | 96.3 %    | 86 %         |
+
+**153 tests** en 20 archivos, con Testing Library sobre **Jest** y jsdom. El umbral es un piso, no
+un techo: está puesto por debajo de la cobertura real a propósito, para que subirla sea una
+decisión consciente y no un accidente de la línea base.
+
+### Cómo están configurados los tests
+
+| Fichero                | Para qué                                                   |
+| ---------------------- | ---------------------------------------------------------- |
+| `jest.config.cjs`      | Entorno, transformador y umbral de cobertura               |
+| `jest.environment.cjs` | jsdom + los globals de Web API que jsdom no implementa     |
+| `babel.config.cjs`     | Solo para Jest; el build de la app lo hace Vite, sin Babel |
+
+Dos detalles que no son evidentes y conviene no deshacer:
+
+- **Babel se usa porque Jest no lee la configuración de Vite.** No es por velocidad: es que
+  con otro transformador los `jest.mock()` dejan de aplicarse al importar `jest` desde
+  `@jest/globals`. `@babel/core` y los presets tienen que estar en la misma major; si no, el
+  stripping de tipos no ocurre y el error que sale es de sintaxis y no dice nada de tipos.
+- **No se inyecta `MessageChannel`.** React 19 lo detecta, su `scheduler` deja de usar el fallback
+  de `setTimeout` y deja un `MessagePort` abierto, que es lo que provoca el aviso de worker sin
+  cerrar. Los globals que sí hacen falta (`Response`, `fetch`, `TextEncoder`) los aporta el entorno.
 
 ## Acceso desde Windows
 
