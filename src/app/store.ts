@@ -1,16 +1,67 @@
 import { combineSlices, configureStore } from '@reduxjs/toolkit'
+import { cartReducer, hydrateCart as hydrateCartAction } from '../features/cart/cartSlice'
 import { coffeeDetailSlice } from '../features/coffee/coffeeDetailSlice'
 import { coffeeSlice } from '../features/coffee/coffeeSlice'
+import { loadCart, saveCart } from '../features/cart/cartStorage'
 
-export const rootReducer = combineSlices(coffeeSlice, coffeeDetailSlice)
+export const rootReducer = combineSlices(coffeeSlice, coffeeDetailSlice, {
+  cart: cartReducer,
+})
 
-export const createStore = (preloadedState?: Partial<ReturnType<typeof rootReducer>>) =>
-  configureStore({
+/**
+ * El carrito se hidrata dentro de `createStore`, no en un `useEffect` del
+ * layout: si el primer render saliera con el carrito vacío, habría un parpadeo
+ * y, peor, el guardado automático de ese primer render pisaría lo que había.
+ *
+ * Vive en la fábrica y no solo en el store de la app a propósito: cualquier
+ * consumidor de `createStore` tiene el mismo comportamiento, y basta uno que se
+ * salte la hidratación para que la persistencia parezca intermitente.
+ */
+const hydrateCart = (): { cart: ReturnType<typeof cartReducer> } | undefined => {
+  const items = loadCart()
+
+  if (items.length === 0) {
+    return undefined
+  }
+
+  return {
+    cart: cartReducer(undefined, { type: hydrateCartAction.type, payload: items }),
+  }
+}
+
+export const createStore = (preloadedState?: Partial<ReturnType<typeof rootReducer>>) => {
+  const store = configureStore({
     reducer: rootReducer,
-    preloadedState: preloadedState as ReturnType<typeof rootReducer> | undefined,
+    preloadedState: (preloadedState ?? hydrateCart()) as ReturnType<typeof rootReducer> | undefined,
   })
 
-export const createTestStore = () => createStore()
+  // Solo `items` se persiste. Las líneas cruzadas con el catálogo y los avisos
+  // son de esta sesión: volver a guardarlos dejaría precios viejos guardados.
+  let ultimoGuardado = JSON.stringify(store.getState().cart.items)
+
+  store.subscribe(() => {
+    const items = store.getState().cart.items
+    const serializado = JSON.stringify(items)
+
+    if (serializado !== ultimoGuardado) {
+      ultimoGuardado = serializado
+      saveCart(items)
+    }
+  })
+
+  return store
+}
+
+/**
+ * Los tests empiezan siempre desde un carrito vacío. Si hidrataran, un test que
+ * escribe en `localStorage` se lo dejaría al siguiente del mismo fichero.
+ */
+export const createTestStore = (preloadedState?: Partial<ReturnType<typeof rootReducer>>) =>
+  createStore(
+    preloadedState ?? {
+      cart: cartReducer(undefined, { type: 'desconocida' }),
+    },
+  )
 
 export const store = createStore()
 
