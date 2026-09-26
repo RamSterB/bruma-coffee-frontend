@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Provider } from 'react-redux'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
+import { createTestStore } from '../../app/store'
 import { CoffeeDetailDialog } from './CoffeeDetailDialog'
 import type { Coffee } from './types'
 
@@ -21,16 +23,18 @@ const buildCoffee = (): Coffee => ({
 
 const renderDialogo = (coffee: Coffee | null) =>
   render(
-    <MemoryRouter initialEntries={['/']}>
-      <Routes>
-        <Route
-          path="/"
-          element={<CoffeeDetailDialog coffee={coffee} onClose={() => undefined} />}
-        />
-        <Route path="/cafe/:id" element={<p>ficha completa</p>} />
-        <Route path="/checkout" element={<p>checkout</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <Provider store={createTestStore()}>
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route
+            path="/"
+            element={<CoffeeDetailDialog coffee={coffee} onClose={() => undefined} />}
+          />
+          <Route path="/cafe/:id" element={<p>ficha completa</p>} />
+          <Route path="/checkout" element={<p>checkout</p>} />
+        </Routes>
+      </MemoryRouter>
+    </Provider>,
   )
 
 describe('CoffeeDetailDialog', () => {
@@ -55,6 +59,12 @@ describe('CoffeeDetailDialog', () => {
     expect(screen.getByRole('button', { name: /comprar ahora/i })).toBeEnabled()
   })
 
+  it('ofrece tambien agregar al carrito, igual que la ruta', () => {
+    renderDialogo(buildCoffee())
+
+    expect(screen.getByRole('button', { name: /agregar al carrito/i })).toBeEnabled()
+  })
+
   it('enlaza con la ficha completa para quien quiere una URL compartible', () => {
     renderDialogo(buildCoffee())
 
@@ -69,9 +79,11 @@ describe('CoffeeDetailDialog', () => {
     let cerrado = false
 
     render(
-      <MemoryRouter>
-        <CoffeeDetailDialog coffee={buildCoffee()} onClose={() => (cerrado = true)} />
-      </MemoryRouter>,
+      <Provider store={createTestStore()}>
+        <MemoryRouter>
+          <CoffeeDetailDialog coffee={buildCoffee()} onClose={() => (cerrado = true)} />
+        </MemoryRouter>
+      </Provider>,
     )
 
     await user.click(screen.getByRole('button', { name: 'Cerrar' }))
