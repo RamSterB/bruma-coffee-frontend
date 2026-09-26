@@ -1,7 +1,9 @@
 import { Button, Chip, FormControlLabel, Radio, RadioGroup, Stack, Typography } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAppDispatch } from '../../app/hooks'
 import { formatCop } from '../../lib/formatCurrency'
+import { addItem } from '../cart/cartSlice'
 import type { Coffee, CoffeeVariant } from './types'
 
 const primeraConStock = (variants: CoffeeVariant[]): CoffeeVariant | undefined =>
@@ -32,16 +34,37 @@ const EtiquetaDeVariante = ({ variant }: { variant: CoffeeVariant }) => (
  * el diálogo del catálogo, de modo que la información y el selector de variante
  * viven en un solo sitio.
  *
+ * "Agregar al carrito" deja la variante elegida en el carrito y sigue en la
+ * ficha, para poder seguir mirando cafés. Solo se guarda el identificador y la
+ * cantidad: el precio y el stock los vuelve a poner el servidor al abrir el
+ * cajón.
+ *
  * "Comprar ahora" no crea la orden: navega al checkout con el café y la variante
  * elegidos. La orden se crea en el checkout, cuando ya se pueden calcular los
  * totales y capturar la dirección.
  */
 export function CoffeeDetailContent({ coffee }: { coffee: Coffee }) {
   const navegar = useNavigate()
+  const despachar = useAppDispatch()
   const inicial = useMemo(() => primeraConStock(coffee.variants), [coffee.variants])
   const [varianteId, setVarianteId] = useState<string | null>(inicial?.id ?? null)
+  const [anunciado, setAnunciado] = useState(false)
 
   const hayStock = coffee.variants.some((variant) => variant.stock > 0)
+  const varianteElegida = coffee.variants.find((variant) => variant.id === varianteId)
+
+  // El aviso de confirmación es de una acción: al cambiar de variante deja de
+  // tener sentido, asi que se retira en vez de quedarse mentiriendo.
+  useEffect(() => setAnunciado(false), [varianteId])
+
+  const agregarAlCarrito = () => {
+    if (varianteElegida === undefined) {
+      return
+    }
+
+    despachar(addItem({ variantId: varianteElegida.id, quantity: 1, stock: varianteElegida.stock }))
+    setAnunciado(true)
+  }
 
   const comprarAhora = () => {
     if (varianteId === null) {
@@ -101,14 +124,30 @@ export function CoffeeDetailContent({ coffee }: { coffee: Coffee }) {
         </Typography>
       )}
 
-      <Button
-        variant="contained"
-        disabled={varianteId === null}
-        onClick={comprarAhora}
-        sx={{ minHeight: 44, alignSelf: 'flex-start' }}
-      >
-        Comprar ahora
-      </Button>
+      <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+        <Button
+          variant="outlined"
+          disabled={varianteElegida === undefined}
+          onClick={agregarAlCarrito}
+          sx={{ minHeight: 44 }}
+        >
+          Agregar al carrito
+        </Button>
+        <Button
+          variant="contained"
+          disabled={varianteId === null}
+          onClick={comprarAhora}
+          sx={{ minHeight: 44 }}
+        >
+          Comprar ahora
+        </Button>
+      </Stack>
+
+      {anunciado ? (
+        <Typography role="status" variant="body2" color="success.main">
+          Añadido al carrito
+        </Typography>
+      ) : null}
     </Stack>
   )
 }

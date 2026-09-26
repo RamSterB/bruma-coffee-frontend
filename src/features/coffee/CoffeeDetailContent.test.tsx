@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Provider } from 'react-redux'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
+import { createTestStore } from '../../app/store'
 import { CoffeeDetailContent } from './CoffeeDetailContent'
 import type { Coffee, CoffeeVariant } from './types'
 
@@ -36,15 +38,22 @@ const DestinoDeCheckout = () => {
   return <p>pantalla de checkout{search}</p>
 }
 
-const renderDetalle = (coffee: Coffee) =>
-  render(
-    <MemoryRouter initialEntries={['/']}>
-      <Routes>
-        <Route path="/" element={<CoffeeDetailContent coffee={coffee} />} />
-        <Route path="/checkout" element={<DestinoDeCheckout />} />
-      </Routes>
-    </MemoryRouter>,
+const renderDetalle = (coffee: Coffee) => {
+  const store = createTestStore()
+
+  const vista = render(
+    <Provider store={store}>
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<CoffeeDetailContent coffee={coffee} />} />
+          <Route path="/checkout" element={<DestinoDeCheckout />} />
+        </Routes>
+      </MemoryRouter>
+    </Provider>,
   )
+
+  return { store, ...vista }
+}
 
 describe('CoffeeDetailContent', () => {
   it('muestra descripción, atributos y notas de cata', () => {
@@ -153,5 +162,77 @@ describe('CoffeeDetailContent', () => {
 
     expect(screen.getByText('Lote de altura del sur de Huila.')).toBeInTheDocument()
     expect(screen.queryByText('jasmín')).not.toBeInTheDocument()
+  })
+
+  it('mete la variante preseleccionada en el carrito', async () => {
+    const user = userEvent.setup()
+    const { store } = renderDetalle(buildCoffee({ variants: [buildVariant({ id: 'var-250' })] }))
+
+    await user.click(screen.getByRole('button', { name: /agregar al carrito/i }))
+
+    expect(store.getState().cart.items).toEqual([{ variantId: 'var-250', quantity: 1 }])
+  })
+
+  it('mete en el carrito la variante que el usuario elige', async () => {
+    const user = userEvent.setup()
+    const { store } = renderDetalle(
+      buildCoffee({
+        variants: [
+          buildVariant({ id: 'var-250', weightGrams: 250 }),
+          buildVariant({ id: 'var-1000', weightGrams: 1000 }),
+        ],
+      }),
+    )
+
+    await user.click(screen.getByRole('radio', { name: /1000 g/ }))
+    await user.click(screen.getByRole('button', { name: /agregar al carrito/i }))
+
+    expect(store.getState().cart.items).toEqual([{ variantId: 'var-1000', quantity: 1 }])
+  })
+
+  it('acumula cantidad si se agrega la misma variante otra vez', async () => {
+    const user = userEvent.setup()
+    const { store } = renderDetalle(buildCoffee({ variants: [buildVariant({ id: 'var-250' })] }))
+
+    await user.click(screen.getByRole('button', { name: /agregar al carrito/i }))
+    await user.click(screen.getByRole('button', { name: /agregar al carrito/i }))
+
+    expect(store.getState().cart.items).toEqual([{ variantId: 'var-250', quantity: 2 }])
+  })
+
+  it('no saca más unidades que el stock disponible', async () => {
+    const user = userEvent.setup()
+    const { store } = renderDetalle(
+      buildCoffee({ variants: [buildVariant({ id: 'var-250', stock: 1 })] }),
+    )
+
+    await user.click(screen.getByRole('button', { name: /agregar al carrito/i }))
+    await user.click(screen.getByRole('button', { name: /agregar al carrito/i }))
+
+    expect(store.getState().cart.items).toEqual([{ variantId: 'var-250', quantity: 1 }])
+  })
+
+  it('confirma que la variante quedó en el carrito', async () => {
+    const user = userEvent.setup()
+    renderDetalle(buildCoffee())
+
+    await user.click(screen.getByRole('button', { name: /agregar al carrito/i }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/añadido al carrito/i)
+  })
+
+  it('no deja agregar al carrito si no hay ninguna variante con stock', () => {
+    renderDetalle(buildCoffee({ variants: [buildVariant({ stock: 0 })] }))
+
+    expect(screen.getByRole('button', { name: /agregar al carrito/i })).toBeDisabled()
+  })
+
+  it('agregar al carrito no lleva al checkout', async () => {
+    const user = userEvent.setup()
+    renderDetalle(buildCoffee())
+
+    await user.click(screen.getByRole('button', { name: /agregar al carrito/i }))
+
+    expect(screen.queryByText(/pantalla de checkout/)).not.toBeInTheDocument()
   })
 })
