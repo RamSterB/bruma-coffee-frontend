@@ -1,15 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jest, beforeEach, describe, expect, it } from '@jest/globals'
 import { ApiError } from '../../app/api/ApiError'
 import { httpClient } from '../../app/api/httpClient'
 import { createTestStore } from '../../app/store'
 import { clearError, fetchCoffees, setFilters, setPage } from './coffeeSlice'
 import type { PaginatedCoffees } from './types'
 
-vi.mock('../../app/api/httpClient', () => ({
-  httpClient: { get: vi.fn() },
+jest.mock('../../app/api/httpClient', () => ({
+  httpClient: { get: jest.fn() },
 }))
 
-const getMock = vi.mocked(httpClient.get)
+const getMock = jest.mocked(httpClient.get)
 
 const buildPage = (overrides: Partial<PaginatedCoffees> = {}): PaginatedCoffees => ({
   items: [

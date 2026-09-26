@@ -13,4 +13,18 @@ export default tseslint.config(
       globals: globals.browser,
     },
   },
+  {
+    // Configuración de Jest y Babel. Son CommonJS a propósito: el paquete es
+    // `"type": "module"` y Jest no lee un `jest.config.js` que se interprete como ESM.
+    // Se ejecutan en Node, no en el navegador, y por eso necesitan `require` y `module`.
+    files: ['**/*.cjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: globals.node,
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 )

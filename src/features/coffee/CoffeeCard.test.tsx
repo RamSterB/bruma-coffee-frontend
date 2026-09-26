@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { jest, describe, expect, it } from '@jest/globals'
 import { CoffeeCard } from './CoffeeCard'
 import type { Coffee } from './types'
 
@@ -22,7 +22,7 @@ const coffee: Coffee = {
 
 describe('CoffeeCard', () => {
   it('muestra el nombre, la región y el proceso', () => {
-    render(<CoffeeCard coffee={coffee} onOpen={vi.fn()} />)
+    render(<CoffeeCard coffee={coffee} onOpen={jest.fn()} />)
 
     expect(screen.getByRole('heading', { name: 'Geisha del Huila' })).toBeInTheDocument()
     expect(screen.getByText('huila')).toBeInTheDocument()
@@ -31,26 +31,26 @@ describe('CoffeeCard', () => {
   })
 
   it('muestra las notas de cata', () => {
-    render(<CoffeeCard coffee={coffee} onOpen={vi.fn()} />)
+    render(<CoffeeCard coffee={coffee} onOpen={jest.fn()} />)
 
     expect(screen.getByText('jasmín · bergamota')).toBeInTheDocument()
   })
 
   it('muestra el precio desde con el formato de Colombia', () => {
-    render(<CoffeeCard coffee={coffee} onOpen={vi.fn()} />)
+    render(<CoffeeCard coffee={coffee} onOpen={jest.fn()} />)
 
     expect(screen.getByText(/^Desde \$ ?48\.000$/)).toBeInTheDocument()
   })
 
   it('lista solo las variantes con stock y marca las agotadas', () => {
-    render(<CoffeeCard coffee={coffee} onOpen={vi.fn()} />)
+    render(<CoffeeCard coffee={coffee} onOpen={jest.fn()} />)
 
     expect(screen.getByText('250 g')).toBeInTheDocument()
     expect(screen.getByText('Agotado')).toBeInTheDocument()
   })
 
   it('no muestra precio cuando el café no tiene variantes disponibles', () => {
-    render(<CoffeeCard coffee={{ ...coffee, priceFrom: null }} onOpen={vi.fn()} />)
+    render(<CoffeeCard coffee={{ ...coffee, priceFrom: null }} onOpen={jest.fn()} />)
 
     expect(screen.queryByText(/desde/i)).not.toBeInTheDocument()
   })
