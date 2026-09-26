@@ -15,7 +15,12 @@ describe('coffeeDetailSlice', () => {
   })
 
   it('al pedir un café pasa a cargando y limpia el error anterior', () => {
-    const conError: CoffeeDetailState = { item: null, loading: false, error: 'algo falló', notFound: false }
+    const conError: CoffeeDetailState = {
+      item: null,
+      loading: false,
+      error: 'algo falló',
+      notFound: false,
+    }
 
     const estado = coffeeDetailReducer(conError, { type: fetchCoffeeById.pending.type })
 

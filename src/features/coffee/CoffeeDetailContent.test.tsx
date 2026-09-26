@@ -40,10 +40,7 @@ const renderDetalle = (coffee: Coffee) =>
   render(
     <MemoryRouter initialEntries={['/']}>
       <Routes>
-        <Route
-          path="/"
-          element={<CoffeeDetailContent coffee={coffee} />}
-        />
+        <Route path="/" element={<CoffeeDetailContent coffee={coffee} />} />
         <Route path="/checkout" element={<DestinoDeCheckout />} />
       </Routes>
     </MemoryRouter>,
@@ -103,7 +100,10 @@ describe('CoffeeDetailContent', () => {
   it('avisa cuando ninguna variante tiene stock', () => {
     renderDetalle(
       buildCoffee({
-        variants: [buildVariant({ id: 'var-a', stock: 0 }), buildVariant({ id: 'var-b', stock: 0 })],
+        variants: [
+          buildVariant({ id: 'var-a', stock: 0 }),
+          buildVariant({ id: 'var-b', stock: 0 }),
+        ],
       }),
     )
 

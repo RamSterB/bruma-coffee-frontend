@@ -44,7 +44,12 @@ const readErrorMessage = async (response: Response): Promise<string> => {
   return `Error ${response.status}`
 }
 
-const request = async <T>(method: string, path: string, body?: unknown, options: RequestOptions = {}): Promise<T> => {
+const request = async <T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  options: RequestOptions = {},
+): Promise<T> => {
   let response: Response
 
   try {
@@ -74,7 +79,8 @@ const request = async <T>(method: string, path: string, body?: unknown, options:
 }
 
 export const httpClient = {
-  get: <T>(path: string, options?: RequestOptions): Promise<T> => request<T>('GET', path, undefined, options),
+  get: <T>(path: string, options?: RequestOptions): Promise<T> =>
+    request<T>('GET', path, undefined, options),
   post: <T>(path: string, body: unknown, options?: RequestOptions): Promise<T> =>
     request<T>('POST', path, body, options),
   put: <T>(path: string, body: unknown, options?: RequestOptions): Promise<T> =>

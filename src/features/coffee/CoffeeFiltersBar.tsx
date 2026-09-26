@@ -1,15 +1,10 @@
 import { Button, MenuItem, Stack, TextField } from '@mui/material'
 import { COFFEE_PROCESSES, COFFEE_REGIONS, ROAST_LEVELS } from './coffeeQuery'
-import type {
-  CoffeeFilters,
-  CoffeeProcess,
-  CoffeeRegion,
-  RoastLevel,
-} from './coffeeQuery'
+import type { CoffeeFilters, CoffeeProcess, CoffeeRegion, RoastLevel } from './coffeeQuery'
 
 const REGION_LABELS: Record<CoffeeRegion, string> = {
   huila: 'Huila',
-  'nariño': 'Nariño',
+  nariño: 'Nariño',
   'valle-del-cauca': 'Valle del Cauca',
   caldas: 'Caldas',
   quindio: 'Quindío',
@@ -61,7 +56,10 @@ export function CoffeeFiltersBar({ filters, onChange, onSearch }: Props) {
         label="Región"
         value={filters.region ?? ''}
         onChange={(event) =>
-          onChange({ ...filters, region: (event.target.value || undefined) as CoffeeRegion | undefined })
+          onChange({
+            ...filters,
+            region: (event.target.value || undefined) as CoffeeRegion | undefined,
+          })
         }
       >
         <MenuItem value="">Todas</MenuItem>
