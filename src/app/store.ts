@@ -1,7 +1,8 @@
 import { combineSlices, configureStore } from '@reduxjs/toolkit'
+import { coffeeDetailSlice } from '../features/coffee/coffeeDetailSlice'
 import { coffeeSlice } from '../features/coffee/coffeeSlice'
 
-export const rootReducer = combineSlices(coffeeSlice)
+export const rootReducer = combineSlices(coffeeSlice, coffeeDetailSlice)
 
 export const createStore = (preloadedState?: Partial<ReturnType<typeof rootReducer>>) =>
   configureStore({

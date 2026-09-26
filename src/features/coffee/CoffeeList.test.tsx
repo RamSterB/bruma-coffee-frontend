@@ -1,6 +1,7 @@
 import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../app/api/ApiError'
 import { httpClient } from '../../app/api/httpClient'
@@ -41,7 +42,9 @@ const buildPage = (overrides: Partial<PaginatedCoffees> = {}): PaginatedCoffees 
 const renderList = () =>
   render(
     <Provider store={createTestStore()}>
-      <CoffeeList />
+      <MemoryRouter>
+        <CoffeeList />
+      </MemoryRouter>
     </Provider>,
   )
 
