@@ -2,9 +2,9 @@ import { combineSlices, configureStore, createListenerMiddleware } from '@reduxj
 import { cartReducer, hydrateCart as hydrateCartAction } from '../features/cart/cartSlice'
 import { coffeeDetailSlice } from '../features/coffee/coffeeDetailSlice'
 import { coffeeSlice } from '../features/coffee/coffeeSlice'
-import { loadCart, saveCart } from '../features/cart/cartStorage'
-import { authReducer, restoreSession, signIn } from '../features/auth/authSlice'
-import { syncLocalCartOnSignIn } from '../features/cart/cartSlice'
+import { clearSavedCart, loadCart, saveCart } from '../features/cart/cartStorage'
+import { authReducer, restoreSession, signIn, signOut } from '../features/auth/authSlice'
+import { clearCart, syncLocalCartOnSignIn } from '../features/cart/cartSlice'
 
 export const rootReducer = combineSlices(coffeeSlice, coffeeDetailSlice, {
   cart: cartReducer,
@@ -57,7 +57,23 @@ alEntrarEnSesion.startListening({
       return
     }
 
+    // La copia del navegador se limpia en cuanto hay sesión, antes de tocar la
+    // red. A partir de este momento el carrito es de la cuenta, y dejarla ahí
+    // haría que al cerrar sesión volviera a aparecer como si fuera de este mismo
+    // visitante. Si el merge fallara, la copia seguiría siendo de la cuenta.
+    clearSavedCart()
+
     await listenerApi.dispatch(syncLocalCartOnSignIn())
+  },
+})
+
+alEntrarEnSesion.startListening({
+  actionCreator: signOut.fulfilled,
+  effect: async (_accion, listenerApi) => {
+    // Al salir, la pantalla de invitado se queda sin carrito. El suyo no se
+    // pierde: está en la cuenta, y vuelve al entrar.
+    listenerApi.dispatch(clearCart())
+    clearSavedCart()
   },
 })
 
@@ -73,7 +89,16 @@ export const createStore = (preloadedState?: Partial<ReturnType<typeof rootReduc
   let ultimoGuardado = JSON.stringify(store.getState().cart.items)
 
   store.subscribe(() => {
-    const items = store.getState().cart.items
+    const estado = store.getState()
+
+    // Con sesión abierta el carrito es de la cuenta y no se guarda en el
+    // navegador. Escribirlo aquí es lo que hacía que, al cerrar sesión, el
+    // carrito de la cuenta reapareciera como si fuera del visitante.
+    if (estado.auth.status === 'autenticada') {
+      return
+    }
+
+    const items = estado.cart.items
     const serializado = JSON.stringify(items)
 
     if (serializado !== ultimoGuardado) {
