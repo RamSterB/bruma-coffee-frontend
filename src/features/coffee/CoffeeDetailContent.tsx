@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch } from '../../app/hooks'
 import { formatCop } from '../../lib/formatCurrency'
-import { addItem } from '../cart/cartSlice'
+import { addToCart } from '../cart/cartSlice'
 import type { Coffee, CoffeeVariant } from './types'
 
 const primeraConStock = (variants: CoffeeVariant[]): CoffeeVariant | undefined =>
@@ -62,7 +62,9 @@ export function CoffeeDetailContent({ coffee }: { coffee: Coffee }) {
       return
     }
 
-    despachar(addItem({ variantId: varianteElegida.id, quantity: 1, stock: varianteElegida.stock }))
+    despachar(
+      addToCart({ variantId: varianteElegida.id, quantity: 1, stock: varianteElegida.stock }),
+    )
     setAnunciado(true)
   }
 

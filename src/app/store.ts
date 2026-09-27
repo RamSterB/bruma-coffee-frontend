@@ -1,9 +1,10 @@
-import { combineSlices, configureStore } from '@reduxjs/toolkit'
+import { combineSlices, configureStore, createListenerMiddleware } from '@reduxjs/toolkit'
 import { cartReducer, hydrateCart as hydrateCartAction } from '../features/cart/cartSlice'
 import { coffeeDetailSlice } from '../features/coffee/coffeeDetailSlice'
 import { coffeeSlice } from '../features/coffee/coffeeSlice'
 import { loadCart, saveCart } from '../features/cart/cartStorage'
-import { authReducer } from '../features/auth/authSlice'
+import { authReducer, restoreSession, signIn } from '../features/auth/authSlice'
+import { syncLocalCartOnSignIn } from '../features/cart/cartSlice'
 
 export const rootReducer = combineSlices(coffeeSlice, coffeeDetailSlice, {
   cart: cartReducer,
@@ -31,10 +32,40 @@ const hydrateCart = (): { cart: ReturnType<typeof cartReducer> } | undefined => 
   }
 }
 
+/**
+ * El carrito del navegador se sube al servidor **siempre** que la sesión pasa a
+ * estar activa, venga de donde venga: del formulario de acceso o de la
+ * recuperación silenciosa al recargar. Si se dejara en manos de quien llama, el
+ * carrito local se quedaría en el navegador justo en el caso de recargar, que es
+ * donde más se nota perderlo.
+ *
+ * Solo se dispara al pasar de no tener sesión a tenerla, para no reenviar el
+ * carrito en cada acción de la sesión.
+ */
+type EstadoDeLaApp = ReturnType<typeof rootReducer>
+
+const alEntrarEnSesion = createListenerMiddleware<EstadoDeLaApp>()
+
+alEntrarEnSesion.startListening({
+  matcher: (accion) => signIn.fulfilled.match(accion) || restoreSession.fulfilled.match(accion),
+  effect: async (_accion, listenerApi) => {
+    // Se mira el estado en el momento de dispatchear y no en el del listener:
+    // cuando corre el efecto, la sesión ya está activa en el store, así que
+    // compararlo con el estado previo no distinguiría "acaba de entrar" de
+    // "ya estaba dentro".
+    if (listenerApi.getState().auth.status !== 'autenticada') {
+      return
+    }
+
+    await listenerApi.dispatch(syncLocalCartOnSignIn())
+  },
+})
+
 export const createStore = (preloadedState?: Partial<ReturnType<typeof rootReducer>>) => {
   const store = configureStore({
     reducer: rootReducer,
     preloadedState: (preloadedState ?? hydrateCart()) as ReturnType<typeof rootReducer> | undefined,
+    middleware: (getDefault) => getDefault().prepend(alEntrarEnSesion.middleware),
   })
 
   // Solo `items` se persiste. Las líneas cruzadas con el catálogo y los avisos
