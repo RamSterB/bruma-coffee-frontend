@@ -87,6 +87,8 @@ const LineaDelCarrito = ({ line }: { line: CartLine }) => {
 export interface CartDrawerProps {
   open: boolean
   onClose: () => void
+  /** Lleva al resumen con el desglose y los datos de entrega. */
+  onContinuar?: () => void
 }
 
 /**
@@ -94,7 +96,7 @@ export interface CartDrawerProps {
  * precio y stock. Resolverlo al cargar gastaría una petición en cada visita para
  * un carrito que igual nadie abre.
  */
-export function CartDrawer({ open, onClose }: CartDrawerProps) {
+export function CartDrawer({ open, onClose, onContinuar }: CartDrawerProps) {
   const dispatch = useAppDispatch()
   const lineas = useAppSelector(selectCartLines)
   const subtotal = useAppSelector(selectCartSubtotal)
@@ -143,6 +145,12 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
             <Typography variant="caption" color="text.secondary">
               El IVA y el envío se calculan en el checkout.
             </Typography>
+
+            {onContinuar !== undefined && (
+              <Button variant="contained" onClick={onContinuar} fullWidth>
+                Continuar con la compra
+              </Button>
+            )}
           </Stack>
         )}
 

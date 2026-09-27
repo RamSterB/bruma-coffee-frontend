@@ -103,7 +103,7 @@ describe('CoffeeDetailContent', () => {
     renderDetalle(buildCoffee({ variants: [buildVariant({ stock: 0 })] }))
 
     expect(screen.getByRole('radio', { name: /agotado/i })).not.toBeChecked()
-    expect(screen.getByRole('button', { name: /comprar ahora/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i })).toBeDisabled()
   })
 
   it('avisa cuando ninguna variante tiene stock', () => {
@@ -117,7 +117,7 @@ describe('CoffeeDetailContent', () => {
     )
 
     expect(screen.getByText(/no hay variantes disponibles/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /comprar ahora/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i })).toBeDisabled()
   })
 
   it('lleva al checkout con el café y la variante elegidas, sin crear la orden', async () => {
@@ -132,7 +132,7 @@ describe('CoffeeDetailContent', () => {
     )
 
     await user.click(screen.getByRole('radio', { name: /1000 g/ }))
-    await user.click(screen.getByRole('button', { name: /comprar ahora/i }))
+    await user.click(screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i }))
 
     const destino = await screen.findByText(/pantalla de checkout/)
     expect(destino).toHaveTextContent('coffee=cafe-1')
@@ -150,7 +150,7 @@ describe('CoffeeDetailContent', () => {
       }),
     )
 
-    await user.click(screen.getByRole('button', { name: /comprar ahora/i }))
+    await user.click(screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i }))
 
     const destino = await screen.findByText(/pantalla de checkout/)
     expect(destino).toHaveTextContent('variant=var-500')

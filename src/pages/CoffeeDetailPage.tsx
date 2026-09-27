@@ -1,6 +1,6 @@
 import { Button, CircularProgress, Stack, Typography } from '@mui/material'
 import { useEffect } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useOutletContext, useParams } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { CoffeeDetailContent } from '../features/coffee/CoffeeDetailContent'
 import { fetchCoffeeById } from '../features/coffee/coffeeDetailSlice'
@@ -8,6 +8,11 @@ import { fetchCoffeeById } from '../features/coffee/coffeeDetailSlice'
 export function CoffeeDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
   const dispatch = useAppDispatch()
+  // El modal de pago vive en el layout, que es donde está el carrito. La ficha
+  // solo avisa de que se quiere abrir, y no depende de dónde esté. El contexto
+  // es `null` cuando la página se pinta sola, en un test, y en ese caso el botón
+  // cae al checkout, que es el mismo destino.
+  const contexto = useOutletContext<{ abrirPago: () => void } | null>()
   const { item, loading, error, notFound } = useAppSelector((state) => state.coffeeDetail)
 
   useEffect(() => {
@@ -77,7 +82,10 @@ export function CoffeeDetailPage() {
           </Link>
         </header>
 
-        <CoffeeDetailContent coffee={item} />
+        <CoffeeDetailContent
+          coffee={item}
+          onPagar={contexto === null ? undefined : () => contexto.abrirPago()}
+        />
       </Stack>
     </main>
   )

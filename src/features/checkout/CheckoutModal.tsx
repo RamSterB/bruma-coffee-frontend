@@ -1,0 +1,356 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  MenuItem,
+  Snackbar,
+  Stack,
+  Step,
+  StepLabel,
+  Stepper,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { useAppDispatch, useAppSelector } from '../../app/hooks'
+import { formatCop } from '../../lib/formatCurrency'
+import {
+  cardBrandFromNumber,
+  isSupportedBrand,
+  validateCard,
+  validateCvv,
+  validateExpiry,
+} from '../../lib/cardValidation'
+import { CardForm, type CardFormValues } from './CardForm'
+import {
+  fetchCities,
+  fetchDepartments,
+  fetchSummary,
+  reiniciarCheckout,
+  selectSummary,
+  submitShipping,
+  type ShippingData,
+} from './checkoutSlice'
+
+const CELDAS_TELEFONO = 10
+
+export interface CheckoutModalProps {
+  open: boolean
+  onClose: () => void
+}
+
+const celdasDelTelefono = (valor: string): number =>
+  valor.replace(/\D/g, '').replace(/^57/, '').length
+
+/**
+ * El modal del checkout, en el orden que pide el proceso: **primero** la tarjeta
+ * y los datos de entrega, y **después** el resumen con el botón de pago. Al revés
+ * se ve el total antes de poder corregir nada de lo que lo produce.
+ *
+ * **Aquí no se calcula ni un peso.** Los importes llegan del backend y se enseñan
+ * tal cual. El formulario solo comprueba lo que es obvio sin red, como que el
+ * teléfono tenga diez dígitos o que la tarjeta pase el algoritmo de Luhn.
+ */
+export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
+  const dispatch = useAppDispatch()
+  const summary = useAppSelector(selectSummary)
+  const { departments, cities, status, error } = useAppSelector((state) => state.checkout)
+
+  const [paso, setPaso] = useState(0)
+  const [tarjeta, setTarjeta] = useState<CardFormValues>({
+    number: '',
+    holder: '',
+    expiry: '',
+    cvv: '',
+  })
+  const [faltanCampos, setFaltanCampos] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  const [fullName, setFullName] = useState('')
+  const [documentNumber, setDocumentNumber] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [department, setDepartment] = useState('')
+  const [city, setCity] = useState('')
+
+  // El desplegable muestra el nombre, que es lo que la persona reconoce, pero la
+  // ruta de las ciudades va por identificador. Sin esta cuenta, la petición sale
+  // a `/departments/Cundinamarca/cities` y no existe.
+  const idDelDepartamento = departments.find((d) => d.name === department)?.id
+
+  useEffect(() => {
+    if (open) {
+      setPaso(0)
+      dispatch(reiniciarCheckout())
+      void dispatch(fetchSummary())
+      void dispatch(fetchDepartments())
+    }
+  }, [open, dispatch])
+
+  useEffect(() => {
+    if (idDelDepartamento === undefined) {
+      return
+    }
+
+    void dispatch(fetchCities(idDelDepartamento))
+    setCity('')
+  }, [idDelDepartamento, dispatch])
+
+  const tarjetaValida =
+    validateCard(tarjeta.number) &&
+    tarjeta.holder.trim().length >= 3 &&
+    validateExpiry(tarjeta.expiry) &&
+    validateCvv(tarjeta.cvv) &&
+    isSupportedBrand(cardBrandFromNumber(tarjeta.number))
+
+  const entregaValida =
+    fullName.trim().length >= 3 &&
+    documentNumber.replace(/\D/g, '').length >= 6 &&
+    celdasDelTelefono(phone) === CELDAS_TELEFONO &&
+    address.trim().length >= 5 &&
+    department !== '' &&
+    city !== ''
+
+  const continuar = async (evento: FormEvent) => {
+    evento.preventDefault()
+
+    if (!tarjetaValida || !entregaValida) {
+      setFaltanCampos(true)
+
+      return
+    }
+
+    setFaltanCampos(false)
+
+    try {
+      // `unwrap` es lo que evita el fallo más tonto de esta pantalla: avanzar al
+      // resumen aunque el backend haya rechazado los datos. El formulario solo
+      // existe en el primer paso, así que saltarse al resumen deja a la persona
+      // sin ver los campos que tiene que corregir y con el error escondido.
+      await dispatch(
+        submitShipping({
+          fullName,
+          documentNumber,
+          phone,
+          address,
+          city,
+          department,
+        } satisfies ShippingData),
+      ).unwrap()
+      setPaso(1)
+    } catch {
+      // El mensaje ya quedó en el store y esta misma pantalla lo enseña.
+    }
+  }
+
+  const cargando = status === 'loading'
+  // La respuesta viene de la red: si le falta `lines`, la pantalla se cae de
+  // golpe. Con la lista vacia se ve "el carrito está vacío", que es un estado
+  // real y además dice la verdad.
+  const lineas = summary?.lines ?? []
+  const vacio = summary !== null && lineas.length === 0
+
+  return (
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth aria-label="Pagar mi pedido">
+        <DialogTitle>Finalizar compra</DialogTitle>
+
+        <DialogContent>
+          <Stepper activeStep={paso} sx={{ mb: 3 }}>
+            <Step>
+              <StepLabel>Tarjeta y envío</StepLabel>
+            </Step>
+            <Step>
+              <StepLabel>Resumen</StepLabel>
+            </Step>
+          </Stepper>
+
+          {error !== null && <Alert severity="error">{error}</Alert>}
+
+          {paso === 0 ? (
+            <Box component="form" onSubmit={continuar} noValidate>
+              <Stack spacing={3}>
+                <Typography variant="subtitle1">Tarjeta</Typography>
+
+                <CardForm values={tarjeta} onChange={setTarjeta} onInvalid={setAviso} />
+
+                <Typography variant="subtitle1">Datos de entrega</Typography>
+
+                <Stack spacing={2}>
+                  <TextField
+                    label="Nombre de quien recibe"
+                    value={fullName}
+                    onChange={(evento) => setFullName(evento.target.value)}
+                    error={faltanCampos && fullName.trim().length < 3}
+                    helperText={
+                      faltanCampos && fullName.trim().length < 3 ? 'Escribe el nombre' : ' '
+                    }
+                    fullWidth
+                  />
+
+                  <TextField
+                    label="Número de documento"
+                    value={documentNumber}
+                    onChange={(evento) => setDocumentNumber(evento.target.value)}
+                    error={faltanCampos && documentNumber.replace(/\D/g, '').length < 6}
+                    helperText={
+                      faltanCampos && documentNumber.replace(/\D/g, '').length < 6
+                        ? 'El documento necesita al menos 6 dígitos'
+                        : ' '
+                    }
+                    fullWidth
+                  />
+
+                  <TextField
+                    label="Teléfono (celular)"
+                    value={phone}
+                    onChange={(evento) => setPhone(evento.target.value)}
+                    error={faltanCampos && celdasDelTelefono(phone) !== CELDAS_TELEFONO}
+                    helperText={
+                      faltanCampos && celdasDelTelefono(phone) !== CELDAS_TELEFONO
+                        ? 'El teléfono debe ser un celular de 10 dígitos'
+                        : 'Solo celular: un pedido se entrega a un teléfono que llevas encima'
+                    }
+                    fullWidth
+                  />
+
+                  <TextField
+                    label="Dirección"
+                    value={address}
+                    onChange={(evento) => setAddress(evento.target.value)}
+                    error={faltanCampos && address.trim().length < 5}
+                    helperText={
+                      faltanCampos && address.trim().length < 5 ? 'Escribe la dirección' : ' '
+                    }
+                    fullWidth
+                  />
+
+                  <TextField
+                    select
+                    label="Departamento"
+                    value={department}
+                    onChange={(evento) => setDepartment(evento.target.value)}
+                    error={faltanCampos && department === ''}
+                    helperText={faltanCampos && department === '' ? 'Elige el departamento' : ' '}
+                    fullWidth
+                  >
+                    {departments.map((opcion) => (
+                      <MenuItem key={opcion.id} value={opcion.name}>
+                        {opcion.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
+                  <TextField
+                    select
+                    label="Ciudad"
+                    value={city}
+                    onChange={(evento) => setCity(evento.target.value)}
+                    error={faltanCampos && city === ''}
+                    helperText={
+                      faltanCampos && city === ''
+                        ? department === ''
+                          ? 'Elige primero el departamento'
+                          : 'Elige la ciudad'
+                        : ' '
+                    }
+                    disabled={department === ''}
+                    fullWidth
+                  >
+                    {cities.map((opcion) => (
+                      <MenuItem key={opcion.id} value={opcion.name}>
+                        {opcion.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Stack>
+
+                <Button type="submit" variant="contained" disabled={cargando} fullWidth>
+                  {cargando ? 'Validando…' : 'Ver el resumen'}
+                </Button>
+              </Stack>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {vacio ? (
+                <Typography variant="body2">Tu carrito está vacío.</Typography>
+              ) : (
+                <Stack spacing={1} divider={<Divider flexItem />}>
+                  {lineas.map((linea) => (
+                    <Stack
+                      key={linea.variantId}
+                      direction="row"
+                      spacing={2}
+                      sx={{ justifyContent: 'space-between' }}
+                    >
+                      <Stack spacing={0}>
+                        <Typography variant="body2">{linea.coffeeName}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {`${linea.quantity} × ${formatCop(linea.unitPrice)}`}
+                        </Typography>
+                      </Stack>
+                      <Typography variant="body2">{formatCop(linea.subtotal)}</Typography>
+                    </Stack>
+                  ))}
+
+                  <Fila etiqueta="Subtotal" valor={formatCop(summary?.subtotal ?? 0)} />
+                  <Fila
+                    etiqueta="Envío"
+                    valor={
+                      summary?.isFreeShipping === true
+                        ? 'Envío gratis'
+                        : formatCop(summary?.shipping ?? 0)
+                    }
+                  />
+                  <Fila etiqueta="Impuestos (IVA 19 %)" valor={formatCop(summary?.tax ?? 0)} />
+                  <Fila etiqueta="Total" valor={formatCop(summary?.total ?? 0)} destacado />
+                </Stack>
+              )}
+
+              <Button variant="text" onClick={() => setPaso(0)}>
+                Volver a corregir los datos
+              </Button>
+
+              <Button
+                variant="contained"
+                fullWidth
+                disabled={cargando || vacio}
+                onClick={() => {
+                  // El cobro se resuelve en el incremento de la pasarela. Este
+                  // botón avisa en vez de fingir: se paga cuando haya pasarela.
+                  setAviso('El pago con tarjeta llega en el próximo paso.')
+                }}
+              >
+                Pagar
+              </Button>
+            </Stack>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Snackbar
+        open={aviso !== null}
+        autoHideDuration={6000}
+        onClose={() => setAviso(null)}
+        message={aviso ?? ''}
+      />
+    </>
+  )
+}
+
+interface FilaProps {
+  etiqueta: string
+  valor: string
+  destacado?: boolean
+}
+
+const Fila = ({ etiqueta, valor, destacado = false }: FilaProps) => (
+  <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
+    <Typography variant={destacado ? 'subtitle1' : 'body2'}>{etiqueta}</Typography>
+    <Typography variant={destacado ? 'subtitle1' : 'body2'}>{valor}</Typography>
+  </Stack>
+)
