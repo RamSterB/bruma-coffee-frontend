@@ -7,12 +7,12 @@ import { Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { formatCop } from '../../lib/formatCurrency'
 import {
-  removeItem,
+  removeFromCart,
   resolveCart,
   selectCartIsEmpty,
   selectCartLines,
   selectCartSubtotal,
-  updateQuantity,
+  changeQuantity,
 } from './cartSlice'
 import type { CartLine } from './types'
 
@@ -43,7 +43,7 @@ const LineaDelCarrito = ({ line }: { line: CartLine }) => {
           size="small"
           onClick={() =>
             dispatch(
-              updateQuantity({
+              changeQuantity({
                 variantId: item.variantId,
                 quantity: item.quantity - 1,
                 stock: variant.stock,
@@ -60,7 +60,7 @@ const LineaDelCarrito = ({ line }: { line: CartLine }) => {
           disabled={alMaximo}
           onClick={() =>
             dispatch(
-              updateQuantity({
+              changeQuantity({
                 variantId: item.variantId,
                 quantity: item.quantity + 1,
                 stock: variant.stock,
@@ -74,7 +74,7 @@ const LineaDelCarrito = ({ line }: { line: CartLine }) => {
           aria-label="Quitar del carrito"
           size="small"
           sx={{ ml: 'auto' }}
-          onClick={() => dispatch(removeItem(item.variantId))}
+          onClick={() => dispatch(removeFromCart(item.variantId))}
         >
           <DeleteOutlineOutlinedIcon fontSize="small" />
         </IconButton>

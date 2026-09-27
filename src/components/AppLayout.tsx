@@ -1,4 +1,4 @@
-import { AppBar, Badge, Box, IconButton, Stack, Toolbar, Typography } from '@mui/material'
+import { AppBar, Badge, Box, Button, IconButton, Stack, Toolbar, Typography } from '@mui/material'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import { useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
@@ -7,6 +7,7 @@ import { CartDrawer } from '../features/cart/CartDrawer'
 import { selectCartCount } from '../features/cart/cartSlice'
 import {
   restoreSession,
+  selectEstaAutenticada,
   selectSesionSolicitada,
   sesionSolicitada,
 } from '../features/auth/authSlice'
@@ -21,6 +22,7 @@ export function AppLayout() {
   const unidades = useAppSelector(selectCartCount)
   const dispatch = useAppDispatch()
   const yaSolicitada = useAppSelector(selectSesionSolicitada)
+  const estaAutenticada = useAppSelector(selectEstaAutenticada)
 
   /**
    * Al recargar no hay token en memoria: quien lo tiene es la cookie `httpOnly`
@@ -52,6 +54,16 @@ export function AppLayout() {
             >
               Bruma Coffee
             </Typography>
+            {estaAutenticada ? (
+              <Button component={Link} to="/cuenta" color="inherit" sx={{ textTransform: 'none' }}>
+                Mi cuenta
+              </Button>
+            ) : (
+              <Button component={Link} to="/entrar" color="inherit" sx={{ textTransform: 'none' }}>
+                Iniciar sesión
+              </Button>
+            )}
+
             <IconButton
               aria-label={`Carrito con ${unidades} unidades`}
               color="inherit"

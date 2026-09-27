@@ -67,6 +67,47 @@ export const restoreSession = createAsyncThunk<Sesion | null, void, { rejectValu
   },
 )
 
+export interface Credenciales {
+  email: string
+  password: string
+}
+
+export interface Registro extends Credenciales {
+  fullName: string
+}
+
+/**
+ * El registro **no** devuelve sesión: el backend responde siempre lo mismo para no
+ * decir qué correos existen, y quien acaba de registrarse todavía no ha
+ * verificado su correo. Por eso esta acción deja la app en modo invitado y la
+ * interfaz pide iniciar sesión.
+ */
+export const signUp = createAsyncThunk<void, Registro, { rejectValue: string }>(
+  'auth/signUp',
+  async (datos, { rejectWithValue }) => {
+    try {
+      await httpClient.post<{ message: string }>('/auth/register', datos)
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof ApiError ? error.message : 'No se pudo completar el registro',
+      )
+    }
+  },
+)
+
+export const signIn = createAsyncThunk<Sesion, Credenciales, { rejectValue: string }>(
+  'auth/signIn',
+  async (credenciales, { rejectWithValue }) => {
+    try {
+      return await httpClient.post<Sesion>('/auth/login', credenciales)
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof ApiError ? error.message : 'No se pudo iniciar sesión',
+      )
+    }
+  },
+)
+
 /**
  * El logout avisa al servidor para que revoke el refresh. Aunque el servidor
  * falle, la sesión local se cierra igual: dejarla "medio cerrada" dejaría al
@@ -75,10 +116,11 @@ export const restoreSession = createAsyncThunk<Sesion | null, void, { rejectValu
 export const signOut = createAsyncThunk<void, void>('auth/signOut', async () => {
   try {
     await httpClient.post<{ message: string }>('/auth/logout', undefined, { csrf: true })
-  } catch (error) {
-    if (!(error instanceof ApiError)) {
-      throw error
-    }
+  } catch {
+    // Se traga cualquier fallo, incluido uno que no sea un error de la API. La
+    // alternativa es que un corte de red deje a la persona con un token vivo en
+    // memoria y una pantalla que dice que acaba de cerrar la sesión. Cerrar
+    // sesión en el navegador tiene que ser algo que siempre pasa.
   }
 })
 
@@ -132,6 +174,29 @@ const authSlice = createSlice({
         estado.error = null
       })
       .addCase(restoreSession.rejected, (estado) => {
+        estado.accessToken = null
+        estado.user = null
+        estado.status = 'anonima'
+        estado.error = null
+      })
+      .addCase(signIn.fulfilled, (estado, accion) => {
+        estado.accessToken = accion.payload.accessToken
+        estado.user = accion.payload.user
+        estado.status = 'autenticada'
+        estado.error = null
+      })
+      .addCase(signIn.rejected, (estado, accion) => {
+        estado.accessToken = null
+        estado.user = null
+        estado.status = 'anonima'
+        estado.error = accion.payload ?? 'No se pudo iniciar sesión'
+      })
+      .addCase(signUp.rejected, (estado, accion) => {
+        estado.error = accion.payload ?? 'No se pudo completar el registro'
+      })
+      .addCase(signUp.fulfilled, (estado) => {
+        // Registrarse deja a la persona en modo invitado y con la pantalla de
+        // "revisa tu correo": no hay sesión hasta que verifique y entre.
         estado.accessToken = null
         estado.user = null
         estado.status = 'anonima'

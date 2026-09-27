@@ -81,4 +81,22 @@ describe('AppRoutes', () => {
 
     expect(screen.getByRole('heading', { name: /no encontrada/i })).toBeInTheDocument()
   })
+
+  it('tiene una ruta para entrar', async () => {
+    renderAt('/entrar')
+
+    expect(await screen.findByRole('button', { name: /entrar/i })).toBeInTheDocument()
+  })
+
+  it('tiene una ruta para crear una cuenta', async () => {
+    renderAt('/registro')
+
+    expect(await screen.findByRole('button', { name: /crear cuenta/i })).toBeInTheDocument()
+  })
+
+  it('tiene una ruta para la cuenta', async () => {
+    renderAt('/cuenta')
+
+    expect(await screen.findByRole('heading', { name: /mi cuenta/i })).toBeInTheDocument()
+  })
 })
