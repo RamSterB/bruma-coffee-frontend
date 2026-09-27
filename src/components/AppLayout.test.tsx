@@ -1,11 +1,12 @@
-import { jest, describe, expect, it } from '@jest/globals'
-import { render, screen } from '@testing-library/react'
+import { jest, describe, expect, it, beforeEach } from '@jest/globals'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './AppLayout'
 import { createTestStore } from '../app/store'
 import { httpClient } from '../app/api/httpClient'
+import { ApiError } from '../app/api/ApiError'
 import { hydrateCart } from '../features/cart/cartSlice'
 import type { CartItem } from '../features/cart/types'
 
@@ -14,9 +15,23 @@ jest.mock('../app/api/httpClient', () => ({
 }))
 
 const get = jest.mocked(httpClient.get)
+const post = jest.mocked(httpClient.post)
 
-const montar = (items: CartItem[] = []) => {
-  const store = createTestStore()
+const sesion = {
+  accessToken: 'token-1',
+  accessTokenExpiresIn: 900,
+  csrfToken: 'csrf-1',
+  user: {
+    id: 'user-1',
+    email: 'persona@ejemplo.com',
+    fullName: 'Persona Registrada',
+    role: 'CUSTOMER',
+    isEmailVerified: true,
+  },
+}
+
+const montar = (items: CartItem[] = [], storePrevio = createTestStore()) => {
+  const store = storePrevio
 
   if (items.length > 0) {
     store.dispatch(hydrateCart(items))
@@ -82,5 +97,60 @@ describe('AppLayout', () => {
     montar()
 
     expect(screen.getByRole('button', { name: /carrito/i })).toBeInTheDocument()
+  })
+  describe('sesión', () => {
+    beforeEach(() => {
+      post.mockReset()
+    })
+
+    it('recupera la sesión al montar, sin que la persona tenga que hacer nada', async () => {
+      post.mockResolvedValue(sesion)
+      const { store } = montar()
+
+      await waitFor(() => {
+        expect(store.getState().auth.accessToken).toBe('token-1')
+      })
+    })
+
+    it('pide la sesión una sola vez aunque el layout se vuelva a montar', async () => {
+      post.mockResolvedValue(sesion)
+      const { store } = montar()
+      await waitFor(() => expect(store.getState().auth.accessToken).toBe('token-1'))
+
+      post.mockClear()
+      montar([], store)
+
+      expect(post).not.toHaveBeenCalled()
+    })
+
+    it('abre en modo invitado si no hay sesión, sin enseñar un error', async () => {
+      post.mockRejectedValue(new ApiError('La sesión no es válida o ha caducado', 401))
+      const { store } = montar()
+
+      await waitFor(() => {
+        expect(store.getState().auth.status).toBe('anonima')
+      })
+
+      expect(store.getState().auth.error).toBeNull()
+    })
+
+    it('no rompe la app si la red falla al recuperar la sesión', async () => {
+      post.mockRejectedValue(new ApiError('No se pudo conectar con el servidor', 0))
+      const { store } = montar()
+
+      await waitFor(() => {
+        expect(store.getState().auth.status).toBe('anonima')
+      })
+    })
+
+    it('el token recuperado no se escribe en localStorage', async () => {
+      post.mockResolvedValue(sesion)
+      const { store } = montar()
+      await waitFor(() => expect(store.getState().auth.accessToken).toBe('token-1'))
+
+      const propias = Object.keys(window.localStorage).filter((clave) => clave !== 'bruma.cart')
+
+      expect(propias).toHaveLength(0)
+    })
   })
 })

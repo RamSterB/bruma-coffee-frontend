@@ -3,9 +3,11 @@ import { cartReducer, hydrateCart as hydrateCartAction } from '../features/cart/
 import { coffeeDetailSlice } from '../features/coffee/coffeeDetailSlice'
 import { coffeeSlice } from '../features/coffee/coffeeSlice'
 import { loadCart, saveCart } from '../features/cart/cartStorage'
+import { authReducer } from '../features/auth/authSlice'
 
 export const rootReducer = combineSlices(coffeeSlice, coffeeDetailSlice, {
   cart: cartReducer,
+  auth: authReducer,
 })
 
 /**

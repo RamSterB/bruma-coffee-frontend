@@ -31,6 +31,9 @@ describe('httpClient', () => {
       writable: true,
       configurable: true,
     })
+    // Las cookies de jsdom sobreviven al test, y una csrf_token sin limpiar
+    // mandaría cabecera CSRF en los tests siguientes sin que se lo pidieran.
+    document.cookie = 'csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
   })
 
   it('devuelve el cuerpo JSON de una respuesta exitosa', async () => {
@@ -154,6 +157,57 @@ describe('httpClient', () => {
 
     const [, init] = fetchMock.mock.calls[0]
     expect(init?.signal).toBe(controller.signal)
+  })
+
+  it('envía las credenciales, que es lo único que hace viajar la cookie de refresh', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true }))
+
+    await httpClient.post('/auth/refresh', undefined)
+
+    expect(fetchMock.mock.calls[0]?.[1]?.credentials).toBe('include')
+  })
+
+  it('manda la cabecera X-CSRF-Token con el valor de la cookie legible', async () => {
+    document.cookie = 'csrf_token=valor-de-la-cookie'
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true }))
+
+    await httpClient.post('/auth/refresh', undefined, { csrf: true })
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers
+    expect(headers.get('X-CSRF-Token')).toBe('valor-de-la-cookie')
+  })
+
+  it('no manda la cabecera CSRF si no hay cookie legible', async () => {
+    document.cookie = 'csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true }))
+
+    await httpClient.post('/auth/refresh', undefined, { csrf: true })
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers
+    expect(headers.get('X-CSRF-Token')).toBeNull()
+  })
+
+  it('lee la cookie CSRF aunque comparta línea con otras', async () => {
+    // Se asignan una a una porque en el setter los punto y coma separan cookies.
+    document.cookie = 'otra=1'
+    document.cookie = 'csrf_token=con-espacios'
+    document.cookie = 'mas=2'
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true }))
+
+    await httpClient.post('/auth/refresh', undefined, { csrf: true })
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers
+    expect(headers.get('X-CSRF-Token')).toBe('con-espacios')
+  })
+
+  it('no manda la cabecera CSRF en una petición que no la pide', async () => {
+    document.cookie = 'csrf_token=valor-de-la-cookie'
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true }))
+
+    await httpClient.get('/catalog')
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers
+    expect(headers.get('X-CSRF-Token')).toBeNull()
   })
 
   it('envía PUT con su cuerpo', async () => {

@@ -1,10 +1,15 @@
 import { AppBar, Badge, Box, IconButton, Stack, Toolbar, Typography } from '@mui/material'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
-import { useAppSelector } from '../app/hooks'
+import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { CartDrawer } from '../features/cart/CartDrawer'
 import { selectCartCount } from '../features/cart/cartSlice'
+import {
+  restoreSession,
+  selectSesionSolicitada,
+  sesionSolicitada,
+} from '../features/auth/authSlice'
 
 /**
  * La barra y el cajón viven aquí y no en cada página: el carrito es de la
@@ -14,6 +19,25 @@ import { selectCartCount } from '../features/cart/cartSlice'
 export function AppLayout() {
   const [carritoAbierto, setCarritoAbierto] = useState(false)
   const unidades = useAppSelector(selectCartCount)
+  const dispatch = useAppDispatch()
+  const yaSolicitada = useAppSelector(selectSesionSolicitada)
+
+  /**
+   * Al recargar no hay token en memoria: quien lo tiene es la cookie `httpOnly`
+   * del refresh, que JavaScript no puede leer. Por eso al montar se pide la
+   * sesión una vez y, si la cookie no estaba, la app abre en modo invitado sin
+   * haberlo pedido. La marca vive en el store porque el layout se vuelve a montar
+   * en cada navegación, y un `useRef` pediría la sesión otra vez: eso sería un
+   * refresh de más, y una rotación de token que nadie pidió.
+   */
+  useEffect(() => {
+    if (yaSolicitada) {
+      return
+    }
+
+    dispatch(sesionSolicitada())
+    void dispatch(restoreSession())
+  }, [dispatch, yaSolicitada])
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -33,9 +57,17 @@ export function AppLayout() {
               color="inherit"
               onClick={() => setCarritoAbierto(true)}
             >
-              <Badge badgeContent={unidades} color="secondary">
+              {/* Con el carrito vacío no se pinta el contador. Ocultarlo con
+                  `invisible` no sirve: el "0" sigue en el DOM y lo leen el
+                  lector de pantalla y las pruebas, que es justo lo que no debe
+                  pasar. Con cero unidades no hay nada que contar. */}
+              {unidades > 0 ? (
+                <Badge badgeContent={unidades} color="secondary">
+                  <ShoppingCartOutlinedIcon />
+                </Badge>
+              ) : (
                 <ShoppingCartOutlinedIcon />
-              </Badge>
+              )}
             </IconButton>
           </Stack>
         </Toolbar>

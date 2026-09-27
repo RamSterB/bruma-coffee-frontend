@@ -6,12 +6,47 @@ const NETWORK_ERROR_STATUS = 0
 export interface RequestOptions {
   token?: string
   signal?: AbortSignal
+  /**
+   * Añade `X-CSRF-Token` con el valor de la cookie legible. Es lo que piden
+   * refresh y logout, porque son peticiones que se apoyan en la cookie y una
+   * cookie viaja sola, también si la petición la provoca otro sitio.
+   */
+  csrf?: boolean
 }
+
+/** Nombre de la cookie que el backend deja legible a propósito, junto a la httpOnly. */
+export const CSRF_COOKIE = 'csrf_token'
 
 const buildUrl = (path: string): string =>
   `${API_PREFIX}${path.startsWith('/') ? path : `/${path}`}`
 
-const buildHeaders = (body: unknown, token?: string): Headers => {
+/**
+ * Lee el valor de una cookie desde `document.cookie`. Devuelve `null` si no está,
+ * que es el caso de quien no tiene sesión, y en ese caso no se manda cabecera
+ * ninguna: mandar una vacía sería peor que no mandarla, porque el servidor
+ * compararía dos vacíos y los daría por iguales.
+ */
+export const readCookie = (name: string): string | null => {
+  if (typeof document === 'undefined') {
+    return null
+  }
+
+  for (const parte of document.cookie.split(';')) {
+    const separador = parte.indexOf('=')
+
+    if (separador < 0) {
+      continue
+    }
+
+    if (parte.slice(0, separador).trim() === name) {
+      return decodeURIComponent(parte.slice(separador + 1).trim())
+    }
+  }
+
+  return null
+}
+
+const buildHeaders = (body: unknown, token?: string, csrf = false): Headers => {
   const headers = new Headers({ Accept: 'application/json' })
 
   if (body !== undefined) {
@@ -20,6 +55,14 @@ const buildHeaders = (body: unknown, token?: string): Headers => {
 
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  if (csrf) {
+    const valor = readCookie(CSRF_COOKIE)
+
+    if (valor !== null && valor !== '') {
+      headers.set('X-CSRF-Token', valor)
+    }
   }
 
   return headers
@@ -55,9 +98,12 @@ const request = async <T>(
   try {
     response = await fetch(buildUrl(path), {
       method,
-      headers: buildHeaders(body, options.token),
+      headers: buildHeaders(body, options.token, options.csrf),
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: options.signal,
+      // Sin esto la cookie de refresh no viaja y no hay sesión que recuperar al
+      // recargar: el token de acceso sí lleva su cabecera, pero el refresh no.
+      credentials: 'include',
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
