@@ -153,4 +153,28 @@ describe('AppLayout', () => {
       expect(propias).toHaveLength(0)
     })
   })
+
+  describe('acceso a la cuenta', () => {
+    beforeEach(() => {
+      post.mockReset()
+    })
+
+    it('ofrece entrar cuando no hay sesión', () => {
+      post.mockResolvedValue(undefined)
+      montar()
+
+      expect(screen.getByRole('link', { name: /iniciar sesi[oó]n/i })).toBeInTheDocument()
+    })
+
+    it('ofrece la cuenta cuando hay sesión, y no ofrece entrar', async () => {
+      post.mockResolvedValue(sesion)
+      const { store } = montar()
+
+      // La sesión se recupera de forma asíncrona, así que la barra cambia sola
+      // un instante después de montarse.
+      expect(await screen.findByRole('link', { name: /mi cuenta/i })).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: /iniciar sesi[oó]n/i })).toBeNull()
+      expect(store.getState().auth.status).toBe('autenticada')
+    })
+  })
 })

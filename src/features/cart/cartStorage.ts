@@ -102,3 +102,13 @@ export const loadCart = (storage: Storage | undefined = STORAGE_POR_DEFECTO()): 
     storage,
   )
 }
+
+/**
+ * Borra el carrito guardado en el navegador. Se usa al abrir sesión, porque a
+ * partir de ese momento el carrito es de la cuenta y no del navegador: si se
+ * dejara, al cerrar sesión volvería a aparecer como si fuera de un invitado que
+ * no lo ha hecho.
+ */
+export const clearSavedCart = (storage: Storage | undefined = STORAGE_POR_DEFECTO()): void => {
+  conStorage((destino) => destino.removeItem(CART_STORAGE_KEY), undefined, storage)
+}

@@ -28,6 +28,8 @@ const initialState: CartState = {
 const UNEXPECTED_MESSAGE = 'No se pudo actualizar el carrito'
 
 export interface ResolvedCart {
+  /** Presente solo cuando hay sesión: entonces manda el servidor. */
+  carritoDelServidor?: CartDelServidor
   variants: CartVariant[]
   /** Variantes cuya cantidad se redujo porque el stock ya no daba. */
   adjustments: string[]
@@ -51,12 +53,70 @@ const noSePuedeComprar = (variant: CartVariant | undefined): boolean =>
  * subtotal y el stock sean los del servidor en vez de lo que la persona recuerda
  * de la última visita.
  */
+/**
+ * Lo que devuelve el carrito del servidor. Es una línea por variante con el
+ * precio y el stock ya resueltos, así que con sesión no hace falta preguntar al
+ * catálogo: el servidor es la fuente y no hay dos verdades.
+ */
+export interface CartLineDelServidor {
+  variantId: string
+  coffeeId: string | null
+  coffeeName: string | null
+  weightGrams: number | null
+  price: number
+  stock: number
+  quantity: number
+  subtotal: number
+  isPurchasable: boolean
+}
+
+export interface CartDelServidor {
+  items: CartLineDelServidor[]
+  subtotal: number
+  totalItems: number
+  purchasableItems: number
+}
+
+const conToken = (estado: RootState) =>
+  estado.auth.accessToken === null ? {} : { token: estado.auth.accessToken }
+
+const haySesion = (estado: RootState): boolean => estado.auth.status === 'autenticada'
+
+/** Las líneas del servidor se convierten al mismo formato que pinta el cajón. */
+const aLineas = (carrito: CartDelServidor): CartLine[] =>
+  carrito.items.map((linea) => ({
+    item: { variantId: linea.variantId, quantity: linea.quantity },
+    variant: {
+      variantId: linea.variantId,
+      coffeeId: linea.coffeeId ?? '',
+      coffeeName: linea.coffeeName ?? 'Café retirado',
+      weightGrams: linea.weightGrams ?? 0,
+      price: linea.price,
+      stock: linea.stock,
+      isActive: linea.isPurchasable,
+    },
+    subtotal: linea.subtotal,
+    adjusted: false,
+  }))
+
 export const resolveCart = createAsyncThunk<
   ResolvedCart,
   void,
   { state: RootState; rejectValue: string }
 >('cart/resolve', async (_void, { getState, rejectWithValue }) => {
-  const items = getState().cart.items
+  const estado = getState()
+
+  if (haySesion(estado)) {
+    try {
+      const carrito = await httpClient.get<CartDelServidor>('/cart', conToken(estado))
+
+      return { carritoDelServidor: carrito, variants: [], adjustments: [], removed: [] }
+    } catch (error) {
+      return rejectWithValue(error instanceof ApiError ? error.message : UNEXPECTED_MESSAGE)
+    }
+  }
+
+  const items = estado.cart.items
 
   if (items.length === 0) {
     return { variants: [], adjustments: [], removed: [] }
@@ -126,6 +186,107 @@ const withLines = (state: CartState, resolved: ResolvedCart): void => {
   })
 }
 
+/**
+ * Agregar al carrito. Sin sesión sigue siendo lo de siempre: se guarda en el
+ * navegador y se resuelve contra el catálogo. Con sesión va contra el servidor,
+ * que es quien corta la cantidad al stock y devuelve el precio.
+ */
+export const addToCart = createAsyncThunk<void, AddItemPayload, { state: RootState }>(
+  'cart/add',
+  async (datos, { dispatch, getState }) => {
+    const estado = getState()
+
+    if (!haySesion(estado)) {
+      dispatch(cartSlice.actions.addItem(datos))
+      await dispatch(resolveCart())
+
+      return
+    }
+
+    const carrito = await httpClient.post<CartDelServidor>(
+      '/cart/items',
+      { variantId: datos.variantId, quantity: datos.quantity },
+      conToken(estado),
+    )
+
+    dispatch(cartSlice.actions.delServidor(carrito))
+  },
+)
+
+/** Cambiar la cantidad de una línea. Misma bifurcación que al agregar. */
+export const changeQuantity = createAsyncThunk<void, UpdateQuantityPayload, { state: RootState }>(
+  'cart/changeQuantity',
+  async (datos, { dispatch, getState }) => {
+    const estado = getState()
+
+    if (!haySesion(estado)) {
+      dispatch(cartSlice.actions.updateQuantity(datos))
+      await dispatch(resolveCart())
+
+      return
+    }
+
+    const carrito = await httpClient.patch<CartDelServidor>(
+      `/cart/items/${datos.variantId}`,
+      { quantity: datos.quantity },
+      conToken(estado),
+    )
+
+    dispatch(cartSlice.actions.delServidor(carrito))
+  },
+)
+
+export const removeFromCart = createAsyncThunk<void, string, { state: RootState }>(
+  'cart/remove',
+  async (variantId, { dispatch, getState }) => {
+    const estado = getState()
+
+    if (!haySesion(estado)) {
+      dispatch(cartSlice.actions.removeItem(variantId))
+      await dispatch(resolveCart())
+
+      return
+    }
+
+    const carrito = await httpClient.delete<CartDelServidor>(
+      `/cart/items/${variantId}`,
+      conToken(estado),
+    )
+
+    dispatch(cartSlice.actions.delServidor(carrito))
+  },
+)
+
+/**
+ * El arranque de sesión. Se sube el carrito del navegador tal cual está: si el
+ * servidor ya tenía uno, es él el que gana y lo que se sube se descarta entero.
+ * Por eso la respuesta del servidor es la que se aplica y no la lista local, que
+ * ya no describe lo que hay guardado.
+ *
+ * La cabecera CSRF es obligatoria aquí: el merge se apoya en la cookie de
+ * sesión, y las cookies viajan solas, también si la petición la provoca otro
+ * sitio.
+ */
+export const syncLocalCartOnSignIn = createAsyncThunk<void, void, { state: RootState }>(
+  'cart/syncOnSignIn',
+  async (_void, { dispatch, getState }) => {
+    const estado = getState()
+    const items = estado.cart.items
+
+    if (!haySesion(estado)) {
+      return
+    }
+
+    const carrito = await httpClient.post<CartDelServidor>(
+      '/cart/merge',
+      { items },
+      { ...conToken(estado), csrf: true },
+    )
+
+    dispatch(cartSlice.actions.delServidor(carrito))
+  },
+)
+
 export const cartSlice = createSlice({
   name: 'cart',
   initialState,
@@ -179,6 +340,16 @@ export const cartSlice = createSlice({
     dismissNotice: (state) => {
       state.notice = null
     },
+    /** El servidor contesta con el carrito entero: se sustituye todo por él. */
+    delServidor: (state, action: PayloadAction<CartDelServidor>) => {
+      state.items = action.payload.items.map((linea) => ({
+        variantId: linea.variantId,
+        quantity: linea.quantity,
+      }))
+      state.lines = aLineas(action.payload)
+      state.status = 'ready'
+      state.error = null
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -189,6 +360,16 @@ export const cartSlice = createSlice({
       .addCase(resolveCart.fulfilled, (state, action: PayloadAction<ResolvedCart>) => {
         state.status = 'ready'
         state.error = null
+
+        if (action.payload.carritoDelServidor !== undefined) {
+          cartSlice.caseReducers.delServidor(state, {
+            ...action,
+            payload: action.payload.carritoDelServidor,
+          } as PayloadAction<CartDelServidor>)
+
+          return
+        }
+
         withLines(state, action.payload)
 
         if (action.payload.removed.length > 0) {

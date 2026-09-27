@@ -4,6 +4,9 @@ import { CheckoutPage } from '../pages/CheckoutPage'
 import { CoffeeDetailPage } from '../pages/CoffeeDetailPage'
 import { HomePage } from '../pages/HomePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { SignInPage } from '../pages/SignInPage'
+import { SignUpPage } from '../pages/SignUpPage'
+import { AccountPage } from '../pages/AccountPage'
 
 export function AppRoutes() {
   return (
@@ -12,6 +15,9 @@ export function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/cafe/:id" element={<CoffeeDetailPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/entrar" element={<SignInPage />} />
+        <Route path="/registro" element={<SignUpPage />} />
+        <Route path="/cuenta" element={<AccountPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
