@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { CartDrawer } from '../features/cart/CartDrawer'
+import { CheckoutModal } from '../features/checkout/CheckoutModal'
 import { selectCartCount } from '../features/cart/cartSlice'
 import {
   restoreSession,
@@ -19,6 +20,7 @@ import {
  */
 export function AppLayout() {
   const [carritoAbierto, setCarritoAbierto] = useState(false)
+  const [resumenAbierto, setResumenAbierto] = useState(false)
   const unidades = useAppSelector(selectCartCount)
   const dispatch = useAppDispatch()
   const yaSolicitada = useAppSelector(selectSesionSolicitada)
@@ -86,10 +88,21 @@ export function AppLayout() {
       </AppBar>
 
       <Box component="main" sx={{ flexGrow: 1 }}>
-        <Outlet />
+        {/* El Outlet recibe el manejador para que la ficha pueda abrir el modal
+            de pago sin tener que importarlo ni saber del store. */}
+        <Outlet context={{ abrirPago: () => setResumenAbierto(true) }} />
       </Box>
 
-      <CartDrawer open={carritoAbierto} onClose={() => setCarritoAbierto(false)} />
+      <CartDrawer
+        open={carritoAbierto}
+        onClose={() => setCarritoAbierto(false)}
+        onContinuar={() => {
+          setCarritoAbierto(false)
+          setResumenAbierto(true)
+        }}
+      />
+
+      <CheckoutModal open={resumenAbierto} onClose={() => setResumenAbierto(false)} />
     </Box>
   )
 }

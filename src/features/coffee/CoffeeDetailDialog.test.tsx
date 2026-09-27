@@ -56,7 +56,7 @@ describe('CoffeeDetailDialog', () => {
     renderDialogo(buildCoffee())
 
     expect(screen.getByRole('radio', { name: /250 g/ })).toBeChecked()
-    expect(screen.getByRole('button', { name: /comprar ahora/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i })).toBeEnabled()
   })
 
   it('ofrece tambien agregar al carrito, igual que la ruta', () => {

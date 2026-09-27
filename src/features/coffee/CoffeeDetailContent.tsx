@@ -39,11 +39,18 @@ const EtiquetaDeVariante = ({ variant }: { variant: CoffeeVariant }) => (
  * cantidad: el precio y el stock los vuelve a poner el servidor al abrir el
  * cajón.
  *
- * "Comprar ahora" no crea la orden: navega al checkout con el café y la variante
- * elegidos. La orden se crea en el checkout, cuando ya se pueden calcular los
- * totales y capturar la dirección.
+ * "Pagar con tarjeta de crédito" abre el modal de pago, que es el primer paso
+ * del proceso de compra: tarjeta y envío primero, y el resumen después. No
+ * crea la orden ni cobra: la orden se crea al confirmar el pago, y ese paso
+ * todavía no existe.
  */
-export function CoffeeDetailContent({ coffee }: { coffee: Coffee }) {
+export function CoffeeDetailContent({
+  coffee,
+  onPagar,
+}: {
+  coffee: Coffee
+  onPagar?: (variantId: string) => void
+}) {
   const navegar = useNavigate()
   const despachar = useAppDispatch()
   const inicial = useMemo(() => primeraConStock(coffee.variants), [coffee.variants])
@@ -68,11 +75,19 @@ export function CoffeeDetailContent({ coffee }: { coffee: Coffee }) {
     setAnunciado(true)
   }
 
-  const comprarAhora = () => {
+  const pagarConTarjeta = () => {
     if (varianteId === null) {
       return
     }
 
+    if (onPagar !== undefined) {
+      onPagar(varianteId)
+
+      return
+    }
+
+    // Sin el modal a mano, el botón sigue llevando al checkout: es el mismo
+    // destino y evita que un consumidor de este contenido se quede sin salida.
     const parametros = new URLSearchParams({ coffee: coffee.id, variant: varianteId })
     navegar(`/checkout?${parametros.toString()}`)
   }
@@ -138,10 +153,10 @@ export function CoffeeDetailContent({ coffee }: { coffee: Coffee }) {
         <Button
           variant="contained"
           disabled={varianteId === null}
-          onClick={comprarAhora}
+          onClick={pagarConTarjeta}
           sx={{ minHeight: 44 }}
         >
-          Comprar ahora
+          Pagar con tarjeta de crédito
         </Button>
       </Stack>
 

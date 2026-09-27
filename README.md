@@ -138,6 +138,35 @@ Dos detalles que no son evidentes y conviene no deshacer:
   de `setTimeout` y deja un `MessagePort` abierto, que es lo que provoca el aviso de worker sin
   cerrar. Los globals que sí hacen falta (`Response`, `fetch`, `TextEncoder`) los aporta el entorno.
 
+## El checkout
+
+`/` · `/cafe/:id` · `/checkout` · `/entrar` · `/registro` · `/cuenta`
+
+El proceso de compra va en pasos, y el orden importa: primero la tarjeta y los
+datos de entrega, y después el resumen con el botón de pago. Al revés se ve el
+total antes de poder corregir nada de lo que lo produce.
+
+1. La ficha del producto tiene **Pagar con tarjeta de crédito**, que abre el modal.
+2. En el modal: **tarjeta y envío**. La tarjeta se valida con el algoritmo de Luhn y
+   la marca se detecta por los primeros dígitos, así que el logo dice Visa o
+   Mastercard desde el primer número. Se aceptan espacios y guiones porque así es
+   como lo escribe la gente. Un aviso de tarjeta inválida **no borra** lo que ya
+   se escribió.
+3. Al validar, el **resumen**: productos, subtotal, envío, IVA del 19 % y total, con
+   el botón de pago. Si el envío quedó gratis, dice "Envío gratis" y no un cero,
+   que parece un error de cálculo.
+
+**Ningún importe se calcula en el navegador.** Llegan enteros del backend y se
+enseñan tal cual: calcular el IVA aquí haría que cada visitante viera un total y
+el cobro fuera otro.
+
+**El número de tarjeta no se persiste.** Vive en el estado en memoria mientras el
+modal está abierto y no se escribe en `localStorage`, ni en `sessionStorage`, ni
+sale en ninguna petición al backend. Al recargar hay que volver a escribirlo.
+
+Todavía **no** hay cobro: el botón de pagar avisa de que la pasarela llega en el
+siguiente incremento, en vez de fingir que cobra.
+
 ## Acceso desde Windows
 
 | Servicio            | URL                              |

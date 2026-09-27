@@ -62,7 +62,9 @@ describe('CoffeeDetailPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Geisha del Huila' })).toBeInTheDocument()
     expect(screen.getByText('Lote de altura del sur de Huila.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /comprar ahora/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i }),
+    ).toBeInTheDocument()
   })
 
   it('muestra un estado de carga mientras pide el café', () => {
