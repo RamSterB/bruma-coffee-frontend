@@ -150,3 +150,29 @@ Dos detalles que no son evidentes y conviene no deshacer:
 
 La guía para publicar frontend (S3 + CloudFront) y backend (ECS/RDS) en AWS está en
 [`bruma-coffee-backend/DEPLOYMENT.md`](../bruma-coffee-backend/DEPLOYMENT.md).
+
+## El checkout
+
+`/` · `/cafe/:id` · `/checkout` · `/entrar` · `/registro` · `/cuenta`
+
+El resumen de la orden vive en un modal que se abre desde el cajón, con el botón
+**Continuar con la compra**. Muestra los productos con su cantidad, el subtotal,
+el envío, el IVA del 19 % y el total, y debajo el formulario de entrega.
+
+**Ninguno de esos importes se calcula en el navegador.** Llegan enteros del
+backend y se enseñan tal cual: calcular el IVA aquí haría que cada visitante
+viera un total y el cobro fuera otro. Cuando el envío queda gratis, el modal dice
+"Envío gratis" y no un cero, que parece un error de cálculo.
+
+El formulario pide nombre, documento, **celular de 10 dígitos**, dirección,
+departamento y ciudad. Las ciudades se cargan según el departamento elegido, y
+las dos listas vienen del backend por la misma razón: una lista escrita en el
+frontend sería una segunda copia, y el día que no cuadren con la del servidor el
+formulario rechaza una ciudad que el servidor acepta.
+
+El teléfono tiene que ser un celular y no un fijo. Un pedido se entrega a un
+teléfono que la persona lleva encima, y un fijo o está mal escrito o es una
+oficina que ya no atiende.
+
+Todavía **no** hay pago: confirmar la entrega deja el total listo, y el cobro
+llega en el incremento siguiente.

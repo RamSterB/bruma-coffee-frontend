@@ -342,11 +342,13 @@ export const cartSlice = createSlice({
     },
     /** El servidor contesta con el carrito entero: se sustituye todo por él. */
     delServidor: (state, action: PayloadAction<CartDelServidor>) => {
-      state.items = action.payload.items.map((linea) => ({
+      // `?? []` por lo mismo que en el checkout: la respuesta viene de la red y
+      // una forma inesperada no puede dejar la página en blanco.
+      state.items = (action.payload.items ?? []).map((linea) => ({
         variantId: linea.variantId,
         quantity: linea.quantity,
       }))
-      state.lines = aLineas(action.payload)
+      state.lines = aLineas({ ...action.payload, items: action.payload.items ?? [] })
       state.status = 'ready'
       state.error = null
     },

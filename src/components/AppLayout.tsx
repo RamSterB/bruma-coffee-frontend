@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { CartDrawer } from '../features/cart/CartDrawer'
+import { CheckoutModal } from '../features/checkout/CheckoutModal'
 import { selectCartCount } from '../features/cart/cartSlice'
 import {
   restoreSession,
@@ -19,6 +20,7 @@ import {
  */
 export function AppLayout() {
   const [carritoAbierto, setCarritoAbierto] = useState(false)
+  const [resumenAbierto, setResumenAbierto] = useState(false)
   const unidades = useAppSelector(selectCartCount)
   const dispatch = useAppDispatch()
   const yaSolicitada = useAppSelector(selectSesionSolicitada)
@@ -89,7 +91,16 @@ export function AppLayout() {
         <Outlet />
       </Box>
 
-      <CartDrawer open={carritoAbierto} onClose={() => setCarritoAbierto(false)} />
+      <CartDrawer
+        open={carritoAbierto}
+        onClose={() => setCarritoAbierto(false)}
+        onContinuar={() => {
+          setCarritoAbierto(false)
+          setResumenAbierto(true)
+        }}
+      />
+
+      <CheckoutModal open={resumenAbierto} onClose={() => setResumenAbierto(false)} />
     </Box>
   )
 }

@@ -177,4 +177,49 @@ describe('AppLayout', () => {
       expect(store.getState().auth.status).toBe('autenticada')
     })
   })
+
+  it('el botón de continuar abre el resumen con el desglose', async () => {
+    // Cada ruta responde con su forma: el mismo doble para todo haría que el
+    // modal recibiera un carrito donde espera una lista de departamentos.
+    get.mockImplementation((async (ruta: string) => {
+      if (ruta === '/geography/departments') {
+        return { items: [{ id: 'd1', name: 'Cundinamarca' }] }
+      }
+      if (ruta.startsWith('/geography/departments/')) {
+        return { items: [{ id: 'c1', name: 'Bogotá' }] }
+      }
+      if (ruta === '/cart/merge') {
+        return { items: [], subtotal: 0, tax: 0, shipping: 0, total: 0, purchasableItems: 0 }
+      }
+      if (ruta === '/cart/summary') {
+        return {
+          lines: [],
+          subtotal: 0,
+          tax: 0,
+          shipping: 0,
+          total: 0,
+          isFreeShipping: false,
+        }
+      }
+
+      return [
+        {
+          variantId: 'v1',
+          coffeeId: 'c1',
+          coffeeName: 'Café Nariño',
+          weightGrams: 250,
+          price: 42000,
+          stock: 10,
+          isActive: true,
+        },
+      ]
+    }) as never)
+    post.mockResolvedValue({ items: [], subtotal: 0, totalItems: 0, purchasableItems: 0 })
+    montar([{ variantId: 'v1', quantity: 1 }])
+
+    await userEvent.click(screen.getByRole('button', { name: /carrito/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /continuar/i }))
+
+    expect(await screen.findByText('Resumen de la orden')).toBeInTheDocument()
+  })
 })
