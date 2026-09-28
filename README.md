@@ -53,6 +53,35 @@ Flujo unidireccional: componente → `dispatch(action)` → reducer actualiza el
 El repositorio incluye `.devcontainer/` con el entorno listo (Node 22 + pnpm/corepack).
 Desde Windows: **File → Open Folder** sobre esta carpeta y luego **Reopen in Container**.
 
+## Skills de `.opencode/skills/`
+
+Hay tres en el repositorio y se versionan, porque describen las decisiones de este
+proyecto y las comparte el equipo:
+
+| Skill                     | Cuándo se lee                                                |
+| ------------------------- | ------------------------------------------------------------ |
+| `frontend-best-practices` | Cualquier componente React: responsive mobile-first, flexbox |
+| `tailwind-flexbox`        | Cualquier CSS o layout: Tailwind v4, flexbox, breakpoints    |
+| `test-driven-development` | Cualquier feature, corrección o refactor                     |
+
+Hay una cuarta, `ui-ux-pro-max`, que **no se versiona** (está en `.gitignore`): son 3,7 MB
+de catálogos que se regeneran con un comando. Antes de abrir el proyecto:
+
+```bash
+npm install -g ui-ux-pro-max-cli
+uipro init --ai opencode
+```
+
+Trae un catálogo local de estilos, paletas, tipografías y 119 directrices de UX, y se
+consulta cuando hay una duda de diseño o de accesibilidad. **El instalador mete siete
+skills, no una**: `banner-design`, `brand`, `design-system`, `design`, `slides` y
+`ui-styling` no aplican aquí, y `ui-styling` además contradice la decisión de
+base del proyecto, que es Material UI. Se borran con:
+
+```bash
+rm -rf .opencode/skills/{banner-design,brand,design-system,design,slides,ui-styling}
+```
+
 ## Variables de entorno
 
 Copia `cp .env.example .env` si vas a ejecutar fuera del contenedor. El devcontainer ya
