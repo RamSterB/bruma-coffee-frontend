@@ -125,3 +125,33 @@ describe('CardForm', () => {
     expect(onInvalid).toHaveBeenCalledWith(expect.stringContaining('3 dígitos'))
   })
 })
+
+describe('el campo de vencimiento', () => {
+  it('pone la barra sola al escribir el año, sin teclearla', async () => {
+    montar()
+
+    await userEvent.type(screen.getByLabelText(/vence/i), '1230')
+
+    expect(screen.getByLabelText(/vence/i)).toHaveValue('12/30')
+  })
+
+  it('no deja escribir un quinto dígito', async () => {
+    montar()
+
+    await userEvent.type(screen.getByLabelText(/vence/i), '12300')
+
+    expect(screen.getByLabelText(/vence/i)).toHaveValue('12/30')
+  })
+
+  it('deja borrar el año y volver a escribirlo', async () => {
+    montar()
+    const campo = screen.getByLabelText(/vence/i)
+    await userEvent.type(campo, '1230')
+
+    await userEvent.type(campo, '{backspace}{backspace}')
+
+    // Si la barra se quedara al borrar, el segundo dígito del mes no se podría
+    // quitar nunca y el campo parecería roto.
+    expect(campo).toHaveValue('12')
+  })
+})

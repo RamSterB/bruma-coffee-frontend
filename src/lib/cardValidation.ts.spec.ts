@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals'
 import {
   cardBrandFromNumber,
   formatCardNumber,
+  formatExpiry,
   isSupportedBrand,
   validateCard,
   validateCvv,
@@ -148,5 +149,47 @@ describe('validateCvv', () => {
 
   it('rechaza letras', () => {
     expect(validateCvv('12a')).toBe(false)
+  })
+})
+
+describe('formatExpiry', () => {
+  it('pone la barra al escribir el segundo dígito del mes', () => {
+    expect(formatExpiry('1')).toBe('1')
+    expect(formatExpiry('12')).toBe('12')
+    expect(formatExpiry('123')).toBe('12/3')
+  })
+
+  it('deja el año detrás de la barra cuando se terminan los cuatro dígitos', () => {
+    expect(formatExpiry('1230')).toBe('12/30')
+  })
+
+  it('no acepta un quinto dígito, que es lo que se ha reportado', () => {
+    // Con `maxLength` puesto en el input y sin formatear, se podían escribir cinco
+    // dígitos. El valor se quedaba ahí, y la validación del vencimiento nunca lo
+    // miraba bien: el corte a cuatro dígitos tiene que estar en el formateo.
+    expect(formatExpiry('12300')).toBe('12/30')
+    expect(formatExpiry('123456789')).toBe('12/34')
+  })
+
+  it('acepta la barra que ya viene escrita y no la duplica', () => {
+    expect(formatExpiry('12/30')).toBe('12/30')
+    expect(formatExpiry('12/3')).toBe('12/3')
+  })
+
+  it('quita la barra si se borra el dígito que la dejó puesta', () => {
+    // Si la barra se queda, el campo queda con un hueco raro que ya no parece un
+    // campo de cuatro dígitos.
+    expect(formatExpiry('12/')).toBe('12')
+    expect(formatExpiry('12/3')).toBe('12/3')
+  })
+
+  it('descarta lo que no son dígitos, como un espacio pegado', () => {
+    expect(formatExpiry('12 30')).toBe('12/30')
+    expect(formatExpiry('ab12cd30')).toBe('12/30')
+  })
+
+  it('deja vacío lo que no tiene dígitos, sin inventar nada', () => {
+    expect(formatExpiry('')).toBe('')
+    expect(formatExpiry('/')).toBe('')
   })
 })

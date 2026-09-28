@@ -8,6 +8,7 @@ import {
   validateCard,
   validateCvv,
   validateExpiry,
+  formatExpiry,
 } from '../../lib/cardValidation'
 
 export interface CardFormValues {
@@ -39,6 +40,9 @@ export function CardForm({ values, onChange, onInvalid, disabled = false }: Card
   const cambiar = (campo: keyof CardFormValues, valor: string) => {
     const siguiente = { ...values, [campo]: valor }
 
+    // Cada campo se formatea en su propio manejador: el número por grupos de cuatro
+    // y el vencimiento con la barra. Si se formateara todo aquí, el vencimiento
+    // heredaría el agrupado del número.
     onChange(campo === 'number' ? { ...siguiente, number: formatCardNumber(valor) } : siguiente)
 
     // El aviso sale al salir del campo, no mientras se escribe: saltaría en cada
@@ -96,7 +100,7 @@ export function CardForm({ values, onChange, onInvalid, disabled = false }: Card
         <TextField
           label="Vence (MM/AA)"
           value={values.expiry}
-          onChange={(evento) => cambiar('expiry', evento.target.value)}
+          onChange={(evento) => cambiar('expiry', formatExpiry(evento.target.value))}
           onBlur={() => {
             setTocado(true)
 
