@@ -3,6 +3,15 @@
 Frontend de **Bruma Coffee**. Aplicación SPA construida con **React**, **Vite**, **TypeScript**,
 **Tailwind CSS** y **Redux Toolkit** siguiendo los lineamientos de **Flux** (estado unidireccional).
 
+|                             |                                                                          |
+| --------------------------- | ------------------------------------------------------------------------ |
+| **Tienda desplegada**       | <https://don1v5z5j5m3b.cloudfront.net>                                   |
+| **API**                     | <https://d1f0emo6o8pkuu.cloudfront.net>                                  |
+| **Documentación de la API** | <https://d1f0emo6o8pkuu.cloudfront.net/api/docs>                         |
+| **Backend**                 | [bruma-coffee-backend](https://github.com/RamSterB/bruma-coffee-backend) |
+
+La tienda y la API se sirven desde orígenes distintos y ambos por **HTTPS**.
+
 ## Stack
 
 | Capa               | Tecnología                                            |
@@ -138,16 +147,19 @@ cajón, para que lo que se ve y lo que se cobra no puedan separarse.
 pnpm test:cov
 ```
 
-| Indicador  | Cobertura | Umbral de CI |
-| ---------- | --------- | ------------ |
-| Statements | 96.5 %    | 86 %         |
-| Branches   | 91.0 %    | 86 %         |
-| Functions  | 95.0 %    | 86 %         |
-| Lines      | 96.3 %    | 86 %         |
+| Indicador  | Cobertura   | Umbral de CI |
+| ---------- | ----------- | ------------ |
+| Statements | **95.92 %** | 86 %         |
+| Branches   | **86.89 %** | 86 %         |
+| Functions  | **94.35 %** | 86 %         |
+| Lines      | **96.12 %** | 86 %         |
 
-**153 tests** en 20 archivos, con Testing Library sobre **Jest** y jsdom. El umbral es un piso, no
-un techo: está puesto por debajo de la cobertura real a propósito, para que subirla sea una
-decisión consciente y no un accidente de la línea base.
+**382 tests** en 45 archivos, con Testing Library sobre **Jest** y jsdom. Los números son los
+del último `main`, y se reproducen con `pnpm test:cov`.
+
+El umbral es un piso, no un techo: está puesto por debajo de la cobertura real a propósito,
+para que subirla sea una decisión consciente y no un accidente de la línea base. Ramas es la
+que más cuesta subir, y por eso está en 86 y no en 90 como las otras tres.
 
 ### Cómo están configurados los tests
 
@@ -169,7 +181,21 @@ Dos detalles que no son evidentes y conviene no deshacer:
 
 ## El checkout
 
-`/` · `/cafe/:id` · `/checkout` · `/entrar` · `/registro` · `/cuenta`
+| Ruta           | Qué es                    | Con sesión                        |
+| -------------- | ------------------------- | --------------------------------- |
+| `/`            | Catálogo                  | anyone                            |
+| `/cafe/:id`    | Ficha del café            | anyone                            |
+| `/mis-ordenes` | Historial de compras      | **sí**                            |
+| `/cuenta`      | Perfil y cierre de sesión | **sí**                            |
+| `/entrar`      | Acceso                    | **no**, si la hay va a la portada |
+| `/registro`    | Crear cuenta              | **no**, si la hay va a la portada |
+
+Las pantallas con sesión no se pueden ver sin ella y **no dan un 404**: se redirige al
+acceso, y de ahí a la portada. Y al revés, quien ya tiene sesión no ve un formulario de
+acceso que no explica por qué aparece.
+
+El proceso de compra **no es una ruta**: vive en un modal que se abre desde el catálogo, la
+ficha o el carrito, porque los tres caminos llegan al mismo sitio.
 
 El proceso de compra va en pasos, y el orden importa: primero la tarjeta y los
 datos de entrega, y después el resumen con el botón de pago. Al revés se ve el
@@ -192,6 +218,17 @@ total antes de poder corregir nada de lo que lo produce.
 3. Al validar, el **resumen**: productos, subtotal, envío, IVA del 19 % y total, con
    el botón de pago. Si el envío quedó gratis, dice "Envío gratis" y no un cero,
    que parece un error de cálculo.
+4. Al pagar, el **estado final** de la transacción: aprobada, rechazada o pendiente. Si
+   quedó pendiente, explica que se está confirmando y no lo deja como un fallo, porque
+   muchas veces lo es.
+5. Y vuelta a la **ficha del producto con el stock ya descontado**. Ese paso es el que
+   comprueba que la tienda se enteró de la venta: si la ficha sigue con el stock
+   anterior, el pago no se aplicó aunque la pantalla dijera que sí.
+
+El paso 5 es también el que vacía el carrito. **El carrito se vacía cuando el pago se
+aprueba, no al abrir el modal ni antes de cobrar**: si se vaciara antes, un pago rechazado
+dejaría a la persona sin su compra y tendría que armarla entera otra vez. Hay un test que lo
+comprueba en los dos repos.
 
 **Ningún importe se calcula en el navegador.** Llegan enteros del backend y se
 enseñan tal cual: calcular el IVA aquí haría que cada visitante viera un total y
@@ -200,10 +237,6 @@ el cobro fuera otro.
 **El número de tarjeta no se persiste.** Vive en el estado en memoria mientras el
 modal está abierto y no se escribe en `localStorage`, ni en `sessionStorage`, ni
 sale en ninguna petición al backend. Al recargar hay que volver a escribirlo.
-
-4. Al pagar, la tarjeta se **tokeniza en el navegador** y se crea la orden. 5. El
-   **resultado**: número de orden, total y si el envío ya está creado, con un botón
-   para volver al café.
 
 **El número de tarjeta no sale del navegador.** La tokenización la hace la pasarela
 con la llave pública, que es la única credencial que puede ir en el cliente; a
@@ -214,7 +247,60 @@ y no viene compilada en el bundle: así un mismo build sirve para los dos ambien
 puede pasar que se tokenice en un sitio y se cobre en otro. Si la tienda no la tiene, el
 pago avisa en vez de crear una orden que nadie puede cobrar.
 
-Todavía **no** hay cobro real: el backend de la pasarela está en su propia PR.
+El cobro es real contra el **ambiente de pruebas** del proveedor, y la tienda desplegada
+paga de verdad contra ese mismo ambiente. Las cuatro llaves de la pasarela llegan al
+contenedor por el almacén de secretos, no en el código ni en el bundle.
+
+## Diseño móvil y recuperación al recargar
+
+### Móvil primero, de verdad
+
+**Los estilos sin prefijo son los del móvil.** No hay ningún `min-width` en el CSS ni
+condiciones que se apliquen solo en pantallas grandes: se escribe primero la versión
+estrecha y luego se sube con `sm:`, `md:` y `lg:`. Un `min-width` suelto en un componente es
+justo la forma de romperlo, y hay que evitarlo.
+
+Se ve en la página del catálogo:
+
+```html
+<!-- una columna en móvil, dos desde 640 px, tres desde 1024 px -->
+<ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <!-- el relleno y el tamaño de letra suben con la pantalla -->
+  <main class="... p-4 sm:p-6 lg:p-8">
+    <h1 class="text-3xl sm:text-4xl"></h1>
+  </main>
+</ul>
+```
+
+Comprobado a **375 px**, que es la anchura de un iPhone SE, sin scroll horizontal.
+
+- **Los botones de acción principales miden 44 px de alto**, que es el mínimo para pulsar sin
+  acertar a ciegas. Está puesto a mano, uno a uno, en los tres de la ficha del café.
+- **El checkout va en un modal centrado y con ancho máximo**, no en varias páginas, para que
+  confirmar el pago no obligue a desplazarse en un móvil.
+- **La tarjeta dibujada se estrecha** en pantallas estrechas en vez de salirse.
+
+**Lo que no está y debería:** los botones de cantidad del cajón usan el tamaño pequeño de
+Material, que se queda por debajo de los 44 px. Tiran a un buen pocos píxeles, y en un dedo
+grande se notan. Es un arreglo de una línea por botón, y está sin hacer.
+
+### El progreso no se pierde al recargar
+
+Una recarga, un cierre de pestaña o un salto atrás no borra lo que la persona había hecho.
+Lo que se guarda, y lo que **no**:
+
+| Qué                   | Dónde                                         | Por qué                                                                                                                                                |
+| --------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Carrito del invitado  | `localStorage`, solo identificador y cantidad | Es lo que hay que recuperar. **El precio y el stock los pone el servidor** al abrir el cajón, así que una copia vieja nunca muestra un precio caducado |
+| Carrito con sesión    | En el servidor                                | El del navegador se sube al iniciar sesión y se vacía al aprobar el pago                                                                               |
+| Token de acceso       | En memoria                                    | No se escribe en ningún almacenamiento: es lo que evita que un XSS se lo lleve                                                                         |
+| Token de refresco     | Cookie `httpOnly`                             | El JavaScript no puede leerla. Con CSRF de doble envío                                                                                                 |
+| **Número de tarjeta** | **En nada**                                   | Vive mientras el modal está abierto y desaparece al cerrarlo. A propósito: al recargar hay que volver a escribirlo                                     |
+
+El modo de recuperación de la sesión es lo que hace que recargar no eche a nadie: al arrancar,
+la aplicación **no sabe todavía** si hay sesión, así que no expulsa a nadie durante ese
+intervalo. Si lo hiciera, la persona que sí tiene sesión caería en la pantalla de acceso cada
+vez que recarga, y el token de refresco no se usaría nunca.
 
 ## Acceso desde Windows
 
@@ -226,5 +312,27 @@ Todavía **no** hay cobro real: el backend de la pasarela está en su propia PR.
 
 ## Despliegue
 
-La guía para publicar frontend (S3 + CloudFront) y backend (ECS/RDS) en AWS está en
+La guía está en
 [`bruma-coffee-backend/DEPLOYMENT.md`](../bruma-coffee-backend/DEPLOYMENT.md).
+
+Resumen de cómo está montado:
+
+| Pieza         | Servicio                                                             |
+| ------------- | -------------------------------------------------------------------- |
+| Build         | S3, bucket privado                                                   |
+| Tienda        | CloudFront con función de reescritura de rutas                       |
+| API           | CloudFront en una **segunda distribución**, con la caché desactivada |
+| Backend       | ECS Fargate detrás de un balanceador                                 |
+| Base de datos | RDS PostgreSQL                                                       |
+| Secretos      | Secrets Manager                                                      |
+
+Dos detalles que no son evidentes:
+
+- **La API necesita su propia distribución** porque el balanceador no puede dar HTTPS sin un
+  dominio, y el servicio de certificados no emite para el nombre de un balanceador. Con una
+  sola distribución, la regla que convierte los 403 y 404 en `index.html` para que funcione
+  el router se aplicaría también a las respuestas de la API y devolvería HTML donde el
+  cliente espera JSON.
+- **`index.html` y los assets se suben con TTL distintos.** El `index.html` cambia en cada
+  compilación y lleva un TTL corto; los assets llevan el hash del contenido en el nombre, así
+  que nunca cambian y pueden tener un TTL de un año.

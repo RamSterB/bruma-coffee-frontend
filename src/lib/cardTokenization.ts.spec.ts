@@ -3,7 +3,7 @@ import { tokenizeCard, type CardTokenizationInput } from './cardTokenization'
 
 /**
  * La tokenización ocurre **en el navegador** y es lo que hace que el número de
- * tarjeta no pase nunca por nuestros servidores (ADR-006). Estos tests usan un
+ * tarjeta no pase nunca por nuestros servidores. Estos tests usan un
  * `fetch` falso: la tokenización real necesita red y una tarjeta de prueba, y una
  * prueba que dependa de eso no es una prueba.
  */
