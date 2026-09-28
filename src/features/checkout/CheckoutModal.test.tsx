@@ -97,6 +97,11 @@ describe('CheckoutModal', () => {
     get.mockReset()
     post.mockReset()
     get.mockImplementation((async (ruta: string) => {
+      if (ruta === '/cart') {
+        // Tras cobrar, el modal vuelve a pedir el carrito para que se vea vacío. Sin
+        // esta ruta el doble devuelve `{}` y el reductor revienta al leer `items`.
+        return Promise.resolve({ items: [] }) as never
+      }
       if (ruta === '/payments/config') {
         // Tienda sin pasarela configurada: es el caso que comprueba el aviso.
         return { publicKey: '', baseUrl: '', environment: null }
@@ -168,6 +173,11 @@ describe('CheckoutModal', () => {
 
   it('el resumen dice "Envío gratis" cuando el envío es cero', async () => {
     get.mockImplementation((async (ruta: string) => {
+      if (ruta === '/cart') {
+        // Tras cobrar, el modal vuelve a pedir el carrito para que se vea vacío. Sin
+        // esta ruta el doble devuelve `{}` y el reductor revienta al leer `items`.
+        return Promise.resolve({ items: [] }) as never
+      }
       if (ruta === '/payments/config') {
         // Tienda sin pasarela configurada: es el caso que comprueba el aviso.
         return { publicKey: '', baseUrl: '', environment: null }

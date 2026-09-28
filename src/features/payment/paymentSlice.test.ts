@@ -165,6 +165,7 @@ describe('paymentSlice', () => {
       order: null,
       finalStatus: null,
       gateway: null,
+      purchasedVariantId: null,
       error: null,
     })
   })
