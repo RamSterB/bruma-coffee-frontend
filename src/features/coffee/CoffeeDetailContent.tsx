@@ -135,8 +135,14 @@ export function CoffeeDetailContent({
         ))}
       </RadioGroup>
 
+      {/*
+        `role="alert"` porque el aviso solo se distinguía por el color. El rojo no lo
+        ve quien no distingue colores, y un lector de pantalla no lee un `Typography`
+        suelto: se quedaba con un café que parecía disponible y dos botones
+        deshabilitados sin explicación de por qué.
+      */}
       {hayStock ? null : (
-        <Typography variant="body2" color="error">
+        <Typography variant="body2" color="error" role="alert">
           No hay variantes disponibles
         </Typography>
       )}

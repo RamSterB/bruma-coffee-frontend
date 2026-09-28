@@ -17,3 +17,8 @@ dist
 .pnpm-store/**
 # Reporte de cobertura generado por Vitest
 coverage/
+
+# La skill de ui-ux-pro-max se regenera, no se versiona. Son 3,7 MB de catálogos CSV
+# que salen de un comando, y commitearlos engorda el repo con datos que nadie lee.
+# Se instala con:  npm install -g ui-ux-pro-max-cli && uipro init --ai opencode
+.opencode/skills/ui-ux-pro-max/
