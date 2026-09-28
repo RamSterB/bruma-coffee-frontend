@@ -75,12 +75,13 @@ export const fetchGatewayConfig = createAsyncThunk<GatewayConfig, void, { reject
 
 /**
  * El formulario pide el vencimiento como `MM/AA`, que es como lo escribe la gente.
- * La pasarela quiere el mes y el año por separado, y el año con cuatro dígitos.
+ * La pasarela quiere el mes y el año por separado, y el año **con dos dígitos**:
+ * mandar 2030 en vez de 30 es un 422, no un cobro.
  */
 const partesDelVencimiento = (expiry: string): { expMonth: string; expYear: string } => {
   const [mes = '', anio = ''] = expiry.split('/')
 
-  return { expMonth: mes.trim(), expYear: `20${anio.trim()}` }
+  return { expMonth: mes.trim(), expYear: anio.trim().slice(-2) }
 }
 
 export const payOrder = createAsyncThunk<

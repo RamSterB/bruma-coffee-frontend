@@ -218,7 +218,8 @@ describe('paymentSlice', () => {
     expect(mockTokenize).toHaveBeenCalledWith(
       expect.objectContaining({
         expMonth: '12',
-        expYear: '2030',
+        // El año va con dos dígitos: la pasarela rechaza 2030.
+        expYear: '30',
         cvc: '123',
         holderName: 'PERSONA COMPRADORA',
       }),

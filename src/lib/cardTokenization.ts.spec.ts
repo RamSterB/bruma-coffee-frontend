@@ -25,29 +25,47 @@ const fetchFalso = (respuesta: unknown, status = 200) => {
 const TARJETA: CardTokenizationInput = {
   number: '4111111111111111',
   expMonth: '12',
-  expYear: '2030',
+  expYear: '30',
   cvc: '123',
   holderName: 'PERSONA COMPRADORA',
+}
+
+/**
+ * La respuesta real del sandbox, copiada de la que devuelve la pasarela. Se usa
+ * esta y no una inventada: los tres detalles que importan (el plural del
+ * endpoint, el estado `CREATED` y el token en `data.id`) no se deducen, se
+ * comprueban.
+ */
+const EXITO = {
+  status: 'CREATED',
+  data: {
+    id: 'tok_stagtest_5113_E523a6b17988dE98F1E0796530dBAe25',
+    brand: 'VISA',
+    last_four: '1111',
+    validity_ends_at: '2026-09-30T02:34:45.059+00:00',
+  },
 }
 
 const CONFIG = { publicKey: 'pub_test_una', baseUrl: 'https://sandbox.wompi.co/v1' }
 
 describe('tokenizeCard', () => {
   it('manda el número, el vencimiento, el código y el titular a la pasarela', async () => {
-    const { fetch, llamadas } = fetchFalso({ status: 'SUCCESS', data: { token: 'tok_1' } })
+    const { fetch, llamadas } = fetchFalso(EXITO)
 
     await tokenizeCard(TARJETA, CONFIG, fetch)
 
     const cuerpo = JSON.parse(String(llamadas[0]?.init.body))
     expect(cuerpo.number).toBe('4111111111111111')
     expect(cuerpo.exp_month).toBe('12')
-    expect(cuerpo.exp_year).toBe('2030')
+    // El año va con dos dígitos. Mandar 2030 es un 422 y no un cobro: la pasarela
+    // espera el año como lo escribe el plástico.
+    expect(cuerpo.exp_year).toBe('30')
     expect(cuerpo.cvc).toBe('123')
-    expect(cuerpo.holder_name).toBe('PERSONA COMPRADORA')
+    expect(cuerpo.card_holder).toBe('PERSONA COMPRADORA')
   })
 
   it('autoriza con la llave pública, que es la única que puede ir en el navegador', async () => {
-    const { fetch, llamadas } = fetchFalso({ status: 'SUCCESS', data: { token: 'tok_1' } })
+    const { fetch, llamadas } = fetchFalso(EXITO)
 
     await tokenizeCard(TARJETA, CONFIG, fetch)
 
@@ -56,17 +74,20 @@ describe('tokenizeCard', () => {
   })
 
   it('devuelve el token cuando la pasarela acepta la tarjeta', async () => {
-    const { fetch } = fetchFalso({ status: 'SUCCESS', data: { token: 'tok_1' } })
+    const { fetch } = fetchFalso(EXITO)
 
     const resultado = await tokenizeCard(TARJETA, CONFIG, fetch)
 
-    expect(resultado).toEqual({ ok: true, value: 'tok_1' })
+    expect(resultado).toEqual({
+      ok: true,
+      value: 'tok_stagtest_5113_E523a6b17988dE98F1E0796530dBAe25',
+    })
   })
 
   it('devuelve un error legible si la tarjeta no se puede tokenizar', async () => {
     const { fetch } = fetchFalso({
       status: 'ERROR',
-      data: { token: '' },
+      data: { id: '' },
       error: { messages: { number: ['La tarjeta no es válida'] } },
     })
 
@@ -98,18 +119,34 @@ describe('tokenizeCard', () => {
   })
 
   it('normaliza el número quitando espacios y guiones antes de enviarlo', async () => {
-    const { fetch, llamadas } = fetchFalso({ status: 'SUCCESS', data: { token: 'tok_1' } })
+    const { fetch, llamadas } = fetchFalso(EXITO)
 
     await tokenizeCard({ ...TARJETA, number: '4111 1111-1111 1111' }, CONFIG, fetch)
 
     expect(JSON.parse(String(llamadas[0]?.init.body)).number).toBe('4111111111111111')
   })
 
-  it('el titular va en mayúsculas, que es como lo exige la pasarela', async () => {
-    const { fetch, llamadas } = fetchFalso({ status: 'SUCCESS', data: { token: 'tok_1' } })
+  it('el titular va en mayúsculas, que es como lo pide la pasarela', async () => {
+    const { fetch, llamadas } = fetchFalso(EXITO)
 
     await tokenizeCard({ ...TARJETA, holderName: 'persona compradora' }, CONFIG, fetch)
 
-    expect(JSON.parse(String(llamadas[0]?.init.body)).holder_name).toBe('PERSONA COMPRADORA')
+    expect(JSON.parse(String(llamadas[0]?.init.body)).card_holder).toBe('PERSONA COMPRADORA')
+  })
+
+  it('el endpoint es en plural: /tokens/cards, y en singular devuelve 404', async () => {
+    const { fetch, llamadas } = fetchFalso(EXITO)
+
+    await tokenizeCard(TARJETA, CONFIG, fetch)
+
+    expect(llamadas[0]?.url).toBe('https://sandbox.wompi.co/v1/tokens/cards')
+  })
+
+  it('devuelve el token aunque la respuesta traiga la fecha de validez, que no interesa aquí', async () => {
+    const { fetch } = fetchFalso(EXITO)
+
+    const resultado = await tokenizeCard(TARJETA, CONFIG, fetch)
+
+    expect(resultado.ok).toBe(true)
   })
 })
