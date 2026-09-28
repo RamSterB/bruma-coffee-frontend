@@ -149,12 +149,12 @@ pnpm test:cov
 
 | Indicador  | Cobertura   | Umbral de CI |
 | ---------- | ----------- | ------------ |
-| Statements | **95.92 %** | 86 %         |
+| Statements | **95.96 %** | 86 %         |
 | Branches   | **86.89 %** | 86 %         |
-| Functions  | **94.35 %** | 86 %         |
-| Lines      | **96.12 %** | 86 %         |
+| Functions  | **94.44 %** | 86 %         |
+| Lines      | **96.14 %** | 86 %         |
 
-**382 tests** en 45 archivos, con Testing Library sobre **Jest** y jsdom. Los números son los
+**389 tests** en 47 archivos, con Testing Library sobre **Jest** y jsdom. Los números son los
 del último `main`, y se reproducen con `pnpm test:cov`.
 
 El umbral es un piso, no un techo: está puesto por debajo de la cobertura real a propósito,
@@ -178,6 +178,47 @@ Dos detalles que no son evidentes y conviene no deshacer:
 - **No se inyecta `MessageChannel`.** React 19 lo detecta, su `scheduler` deja de usar el fallback
   de `setTimeout` y deja un `MessagePort` abierto, que es lo que provoca el aviso de worker sin
   cerrar. Los globals que sí hacen falta (`Response`, `fetch`, `TextEncoder`) los aporta el entorno.
+
+## Rendimiento
+
+### Cada pantalla viene en su trozo
+
+Las rutas se cargan **bajo demanda**, menos la de inicio y la de "no encontrada".
+
+El motivo no son los bytes, es el ancho de banda: quien abre la tienda para mirar un café
+no tiene por qué bajarse el modal de pago con sus siete campos, la tarjeta dibujada y la
+tokenización. Con las siete pantallas en el paquete inicial, mirar el catálogo carga
+también el checkout entero.
+
+Las dos que se quedan en el paquete inicial son a propósito: la de inicio es lo primero
+que se ve, y la de "no encontrada" es el fallo de cualquier ruta mal escrita. Si vinieran
+en un trozo, abrir la tienda tardaría un viaje de más en pintar el catálogo y un 404 dejaría
+un hueco en blanco.
+
+El precio del trato es que **una ruta puede llegar vacía**, y el fallo aparece al navegar,
+no al cargar. Por eso hay un indicador de carga y cinco pruebas que comprueban que cada
+pantalla aparece cuando se pide, incluida la navegación entre dos de ellas.
+
+### Cabeceras de seguridad
+
+La página de la tienda se sirve desde una CDN y **no hereda las cabeceras de la API**, así
+que hay que ponérselas en la distribución. Todas van con su política de cabeceras de
+respuesta.
+
+La CSP es restrictiva salvo en dos puntos, y los dos son obligatorios:
+
+- **`style-src` lleva `'unsafe-inline'`** porque el sistema de estilos inserta hojas en la
+  página mientras se ejecuta. Sin eso la tienda sale sin estilos.
+- **`connect-src` incluye el origen de la pasarela**, porque **la tarjeta se tokeniza en el
+  navegador**: la petición va de la tienda al proveedor de pagos, que es otro origen. Con
+  `'self'` a secas la página carga entera y **el pago no se puede hacer nunca**. Es la
+  trampa de la que hay que acordarse al tocarla.
+
+El resto va cerrado: `script-src 'self'` sin `unsafe-eval` ni en línea, `object-src 'none'`,
+`frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, y `upgrade-insecure-requests`.
+
+Además, `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` y HSTS con
+`includeSubDomains` y `preload`.
 
 ## El checkout
 
@@ -280,9 +321,9 @@ Comprobado a **375 px**, que es la anchura de un iPhone SE, sin scroll horizonta
   confirmar el pago no obligue a desplazarse en un móvil.
 - **La tarjeta dibujada se estrecha** en pantallas estrechas en vez de salirse.
 
-**Lo que no está y debería:** los botones de cantidad del cajón usan el tamaño pequeño de
-Material, que se queda por debajo de los 44 px. Tiran a un buen pocos píxeles, y en un dedo
-grande se notan. Es un arreglo de una línea por botón, y está sin hacer.
+- **Los botones de cantidad del cajón miden 44 × 44 px.** Usaban el tamaño pequeño de
+  Material, que se queda en unos 34: hay que apuntar y a la persona le pulsa el café de al
+  lado. Con la compra ya decidida, un toque de más quita un café del carrito.
 
 ### El progreso no se pierde al recargar
 

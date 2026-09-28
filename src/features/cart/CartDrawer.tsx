@@ -16,7 +16,16 @@ import {
 } from './cartSlice'
 import type { CartLine } from './types'
 
-export const CART_DRAWER_WIDTH = 380
+export /**
+ * 44 px, el alto minimo para pulsar con el dedo sin acertar a ciegas.
+ *
+ * El tamaño pequeño de Material deja los botones en unos 34 px, que es la diferencia
+ * entre pulsar y pulsar de mas. Con la compra ya decidida, tocar el cafe equivocado al
+ * quitar una unidad quita un cafe del carrito, y nadie da atras en eso.
+ */
+const ALTO_TACTIL = 44
+
+const CART_DRAWER_WIDTH = 380
 
 const LineaDelCarrito = ({ line }: { line: CartLine }) => {
   const dispatch = useAppDispatch()
@@ -41,6 +50,7 @@ const LineaDelCarrito = ({ line }: { line: CartLine }) => {
         <IconButton
           aria-label="Quitar uno"
           size="small"
+          sx={{ minWidth: ALTO_TACTIL, minHeight: ALTO_TACTIL }}
           onClick={() =>
             dispatch(
               changeQuantity({
@@ -57,6 +67,7 @@ const LineaDelCarrito = ({ line }: { line: CartLine }) => {
         <IconButton
           aria-label="Aumentar"
           size="small"
+          sx={{ minWidth: ALTO_TACTIL, minHeight: ALTO_TACTIL }}
           disabled={alMaximo}
           onClick={() =>
             dispatch(
@@ -73,7 +84,7 @@ const LineaDelCarrito = ({ line }: { line: CartLine }) => {
         <IconButton
           aria-label="Quitar del carrito"
           size="small"
-          sx={{ ml: 'auto' }}
+          sx={{ ml: 'auto', minWidth: ALTO_TACTIL, minHeight: ALTO_TACTIL }}
           onClick={() => dispatch(removeFromCart(item.variantId))}
         >
           <DeleteOutlineOutlinedIcon fontSize="small" />
