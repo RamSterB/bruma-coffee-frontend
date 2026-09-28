@@ -8,6 +8,7 @@ import { SignInPage } from '../pages/SignInPage'
 import { SignUpPage } from '../pages/SignUpPage'
 import { AccountPage } from '../pages/AccountPage'
 import { MyOrdersPage } from '../pages/MyOrdersPage'
+import { RutaPrivada, RutaPublica } from './RouteGuards'
 
 export function AppRoutes() {
   return (
@@ -16,10 +17,40 @@ export function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/cafe/:id" element={<CoffeeDetailPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/entrar" element={<SignInPage />} />
-        <Route path="/registro" element={<SignUpPage />} />
-        <Route path="/cuenta" element={<AccountPage />} />
-        <Route path="/mis-ordenes" element={<MyOrdersPage />} />
+        {/* Con sesión ya abierta, la pantalla de acceso y la de registro sobran. */}
+        <Route
+          path="/entrar"
+          element={
+            <RutaPublica>
+              <SignInPage />
+            </RutaPublica>
+          }
+        />
+        <Route
+          path="/registro"
+          element={
+            <RutaPublica>
+              <SignUpPage />
+            </RutaPublica>
+          }
+        />
+        {/* Estas dos no se pueden ver sin sesión, ni aunque se escriba la dirección a mano. */}
+        <Route
+          path="/cuenta"
+          element={
+            <RutaPrivada>
+              <AccountPage />
+            </RutaPrivada>
+          }
+        />
+        <Route
+          path="/mis-ordenes"
+          element={
+            <RutaPrivada>
+              <MyOrdersPage />
+            </RutaPrivada>
+          }
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

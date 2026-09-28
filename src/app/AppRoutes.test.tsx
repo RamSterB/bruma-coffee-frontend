@@ -1,102 +1,176 @@
+import { describe, expect, it, jest, beforeEach } from '@jest/globals'
 import { render, screen, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
-import { jest, beforeEach, describe, expect, it } from '@jest/globals'
 import { AppRoutes } from './AppRoutes'
+import { createTestStore, type AppStore } from './store'
+import { sesionRestaurada, sesionNoRestaurada, type Sesion } from '../features/auth/authSlice'
 import { httpClient } from './api/httpClient'
-import { createTestStore } from './store'
-import type { Coffee, PaginatedCoffees } from '../features/coffee/types'
 
-const renderAt = (path: string) =>
+jest.mock('./api/httpClient', () => ({
+  httpClient: { get: jest.fn(), post: jest.fn() },
+}))
+
+const get = jest.mocked(httpClient.get)
+const post = jest.mocked(httpClient.post)
+
+const SESION: Sesion = {
+  accessToken: 'token-1',
+  accessTokenExpiresIn: 900,
+  csrfToken: 'csrf-1',
+  user: {
+    id: 'user-1',
+    email: 'comprador@ejemplo.co',
+    fullName: 'Persona Compradora',
+    role: 'CUSTOMER',
+    isEmailVerified: true,
+  },
+}
+
+/** Con la sesión ya resuelta, para no medir el tiempo de recuperación. */
+const conSesion = () => {
+  const store = createTestStore({ auth: undefined })
+  store.dispatch(sesionRestaurada(SESION))
+
+  return store
+}
+
+/** Sin sesión, y ya se ha intentado recuperarla: eso es "anónimo", no "todavía no sé". */
+const sinSesion = () => {
+  const store = createTestStore({ auth: undefined })
+  store.dispatch(sesionNoRestaurada())
+
+  return store
+}
+
+const montarEn = (ruta: string, store: AppStore) =>
   render(
-    <Provider store={createTestStore()}>
-      <MemoryRouter initialEntries={[path]}>
+    <Provider store={store}>
+      <MemoryRouter initialEntries={[ruta]}>
         <AppRoutes />
       </MemoryRouter>
     </Provider>,
   )
 
-jest.mock('./api/httpClient', () => ({
-  httpClient: { get: jest.fn() },
-}))
-
-const getMock = jest.mocked(httpClient.get)
-
-const cafe: Coffee = {
-  id: 'cafe-1',
-  name: 'Geisha del Huila',
-  description: 'Lote de altura del sur de Huila.',
-  roastLevel: 'light',
-  process: 'washed',
-  region: 'huila',
-  tastingNotes: ['jasmín'],
-  priceFrom: 48000,
-  variants: [{ id: 'var-250', weightGrams: 250, price: 48000, stock: 10, isActive: true }],
-  createdAt: '2026-09-26T00:00:00.000Z',
-  updatedAt: '2026-09-26T00:00:00.000Z',
-}
-
-const paginaVacia: PaginatedCoffees = {
-  items: [],
-  total: 0,
-  page: 1,
-  limit: 12,
-  totalPages: 0,
-}
-
-describe('AppRoutes', () => {
+describe('quien entra sin sesion a una pantalla que la necesita', () => {
   beforeEach(() => {
-    getMock.mockReset()
-    // la portada pide el catálogo: sin respuesta, el listado revienta al leerla
-    getMock.mockResolvedValue(paginaVacia)
+    get.mockReset()
+    post.mockReset()
+    post.mockRejectedValue(new Error('sin cookie') as never)
+    get.mockResolvedValue({ items: [] } as never)
   })
 
-  it('muestra la marca en la página de inicio', () => {
-    renderAt('/')
+  it('el historial le lleva a entrar, no a una pantalla que no puede cargar', async () => {
+    montarEn('/mis-ordenes', sinSesion())
+
+    // Antes se quedaba en la pagina escribiendo un aviso y pidiendo entrar a mano.
+    // Es un callejon sin salida: la pantalla no puede pedir sus ordenes sin sesion, y
+    // el aviso no dice como seguir.
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
+  })
+
+  it('la cuenta tambien, en vez de un aviso dentro de la pagina', async () => {
+    montarEn('/cuenta', sinSesion())
+
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
+  })
+
+  it('no llega a pedir nada al backend, que solo le devolveria un 401', async () => {
+    montarEn('/mis-ordenes', sinSesion())
+
+    await screen.findByRole('heading', { name: /iniciar sesión/i })
+    // La peticion se hace en cuanto se monta la pagina, y el fallo sale en consola
+    // como un 401 que nadie causo. Redirigiendo antes, ni se pide.
+    expect(get).not.toHaveBeenCalledWith('/orders', expect.anything())
+  })
+})
+
+describe('quien ya tiene sesion y entra a la pantalla de entrar', () => {
+  beforeEach(() => {
+    get.mockReset()
+    post.mockReset()
+    post.mockResolvedValue(SESION as never)
+    get.mockResolvedValue({ items: [] } as never)
+  })
+
+  it('le lleva a la portada, no a un formulario que no necesita', async () => {
+    montarEn('/entrar', conSesion())
+
+    // Un formulario de acceso para quien ya esta dentro es una pantalla que no explica
+    // por que aparece, y ademas invita a volver a escribir la contrasena. La portada
+    // es donde se va a comprar, que es lo que esa persona iba a hacer.
+    expect(await screen.findByRole('heading', { name: /bruma coffee/i })).toBeInTheDocument()
+  })
+
+  it('el registro tambien, a la misma portada', async () => {
+    montarEn('/registro', conSesion())
+
+    expect(await screen.findByRole('heading', { name: /bruma coffee/i })).toBeInTheDocument()
+  })
+
+  it('no le deja quedarse en la pantalla de acceso, que no se sabe si escribio a mano', async () => {
+    montarEn('/entrar', conSesion())
+
+    // Ni un instante con el formulario a la vista. En la practica es un parpadeo, pero
+    // alguien que llega recargando la ve el destello y parece que la pagina cambio.
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /iniciar sesión/i })).toBeNull(),
+    )
+  })
+})
+
+describe('mientras se recupera la sesion', () => {
+  beforeEach(() => {
+    get.mockReset()
+    post.mockReset()
+    post.mockResolvedValue(SESION as never)
+    get.mockResolvedValue({ items: [] } as never)
+  })
+
+  it('no expulsa a nadie, porque todavia no se sabe si hay sesion', async () => {
+    // Este es el fallo que hace estas guardas inutiles si se olvidan. Al abrir el
+    // sitio, el token esta en una cookie httpOnly y la sesion se recupera sola. Si la
+    // guarda redirija mientras se pregunta, la persona que si tiene sesion aterriza en
+    // la pantalla de entrar cada vez que recarga, y el token de refresco no se llega a
+    // usar.
+    const store = createTestStore({ auth: undefined })
+    montarEn('/mis-ordenes', store)
+
+    expect(store.getState().auth.status).toBe('iniciando')
+    await waitFor(() => expect(post).toHaveBeenCalled())
+    expect(screen.queryByRole('heading', { name: /iniciar sesión/i })).toBeNull()
+  })
+
+  it('si la sesion si existia, la pagina se queda donde estaba', async () => {
+    montarEn('/mis-ordenes', conSesion())
+
+    expect(await screen.findByRole('heading', { name: /mis órdenes/i })).toBeInTheDocument()
+  })
+})
+
+describe('las pantallas publicas', () => {
+  beforeEach(() => {
+    get.mockReset()
+    post.mockReset()
+    post.mockRejectedValue(new Error('sin cookie') as never)
+    get.mockResolvedValue({ items: [] } as never)
+  })
+
+  it('el catalogo se abre sin sesion, que es como se compra como invitado', async () => {
+    montarEn('/', sinSesion())
 
     expect(screen.getByRole('heading', { name: /bruma coffee/i })).toBeInTheDocument()
   })
 
-  it('resuelve /cafe/:id a la ficha del café', async () => {
-    getMock.mockResolvedValue(cafe)
+  it('el acceso se puede abrir sin sesion, que es justo para eso', async () => {
+    montarEn('/entrar', sinSesion())
 
-    renderAt('/cafe/cafe-1')
-
-    await waitFor(() => expect(getMock).toHaveBeenCalledWith('/coffee/cafe-1'))
-    expect(await screen.findByRole('heading', { name: 'Geisha del Huila' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
   })
 
-  it('resuelve /checkout al marcador de posición', async () => {
-    getMock.mockResolvedValue(cafe)
+  it('la compra tambien, porque el checkout de invitado es una decision de producto', async () => {
+    montarEn('/checkout', sinSesion())
 
-    renderAt('/checkout?coffee=cafe-1&variant=var-250')
-
-    expect(
-      await screen.findByText(/el checkout llega en un próximo incremento/i),
-    ).toBeInTheDocument()
-  })
-
-  it('muestra un mensaje de página no encontrada en rutas desconocidas', () => {
-    renderAt('/ruta-que-no-existe')
-
-    expect(screen.getByRole('heading', { name: /no encontrada/i })).toBeInTheDocument()
-  })
-
-  it('tiene una ruta para entrar', async () => {
-    renderAt('/entrar')
-
-    expect(await screen.findByRole('button', { name: /entrar/i })).toBeInTheDocument()
-  })
-
-  it('tiene una ruta para crear una cuenta', async () => {
-    renderAt('/registro')
-
-    expect(await screen.findByRole('button', { name: /crear cuenta/i })).toBeInTheDocument()
-  })
-
-  it('tiene una ruta para la cuenta', async () => {
-    renderAt('/cuenta')
-
-    expect(await screen.findByRole('heading', { name: /mi cuenta/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /mi cuenta/i })).toBeNull()
   })
 })
