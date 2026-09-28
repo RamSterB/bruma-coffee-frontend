@@ -50,20 +50,23 @@ describe('CardForm', () => {
     )
   })
 
-  it('el logo dice Visa en cuanto se escriben los primeros dígitos', async () => {
+  it('la tarjeta dibujada dice Visa en cuanto se escriben los primeros dígitos', async () => {
     montar()
 
     await userEvent.type(screen.getByLabelText(/n[uú]mero de tarjeta/i), '4')
 
-    expect(await screen.findByLabelText('Tarjeta Visa')).toBeInTheDocument()
+    // El nombre va **escrito** en el dibujo y no solo como nombre accesible de un
+    // icono: el color y el símbolo no los lee todo el mundo, y una etiqueta oculta
+    // solo la lee un lector de pantalla.
+    expect(await screen.findByText('Visa')).toBeInTheDocument()
   })
 
-  it('el logo dice Mastercard en cuanto se escriben los primeros dígitos', async () => {
+  it('la tarjeta dibujada dice Mastercard en cuanto se escriben los primeros dígitos', async () => {
     montar()
 
     await userEvent.type(screen.getByLabelText(/n[uú]mero de tarjeta/i), '55')
 
-    expect(await screen.findByLabelText('Tarjeta Mastercard')).toBeInTheDocument()
+    expect(await screen.findByText('Mastercard')).toBeInTheDocument()
   })
 
   it('avisa que una tarjeta inválida no es válida, sin vaciar lo escrito', async () => {

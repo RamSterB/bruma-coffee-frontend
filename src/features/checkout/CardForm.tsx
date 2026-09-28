@@ -1,7 +1,6 @@
-import { Box, Stack, TextField, Typography } from '@mui/material'
-import CreditCardIcon from '@mui/icons-material/CreditCard'
+import { Stack, TextField, Typography } from '@mui/material'
+import { CardVisual } from './CardVisual'
 import { useState } from 'react'
-import type { CardBrand } from '../../lib/cardValidation'
 import {
   cardBrandFromNumber,
   formatCardNumber,
@@ -24,18 +23,6 @@ export interface CardFormProps {
   /** Se llama con el motivo cuando algo no cuadra, para avisar sin bloquear. */
   onInvalid: (motivo: string) => void
   disabled?: boolean
-}
-
-const NOMBRES: Record<CardBrand, string> = {
-  VISA: 'Visa',
-  MASTERCARD: 'Mastercard',
-  DESCONOCIDA: 'Tarjeta',
-}
-
-const COLOR_POR_MARCA: Record<CardBrand, string> = {
-  VISA: '#1A1F71',
-  MASTERCARD: '#EB001B',
-  DESCONOCIDA: 'rgba(0, 0, 0, 0.54)',
 }
 
 /**
@@ -67,23 +54,9 @@ export function CardForm({ values, onChange, onInvalid, disabled = false }: Card
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-        <Box
-          aria-label={`Tarjeta ${NOMBRES[marca]}`}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            color: COLOR_POR_MARCA[marca],
-            transition: 'color 120ms',
-          }}
-        >
-          <CreditCardIcon fontSize="small" />
-          <Typography variant="caption" sx={{ fontWeight: 600 }}>
-            {NOMBRES[marca]}
-          </Typography>
-        </Box>
-      </Stack>
+      {/* La tarjeta dibujada va **encima** de los campos, no al lado: es lo que
+          convierte una pantalla de formulario en una pantalla de pago. */}
+      <CardVisual values={values} brand={marca} />
 
       {tocado && !soportada && (
         <Typography variant="caption" color="error" role="alert">
