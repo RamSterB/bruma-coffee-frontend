@@ -179,7 +179,11 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
         shipping: {
           fullName,
           documentNumber,
-          phone: `57${celdasDelTelefono(phone) === CELDAS_TELEFONO ? phone.replace(/\D/g, '').slice(-CELDAS_TELEFONO) : phone.replace(/\D/g, '')}`,
+          // El celular va tal cual lo escribe quien compra. El backend valida que sean diez
+          // dígitos empezando por 3, y anteponer aquí el `57` lo convertía en doce: la orden
+          // se rechazaba con un 400 y no se llegaba a cobrar nada. El indicativo no hace
+          // falta para nada, porque el número se guarda y no se manda a la pasarela.
+          phone: phone.replace(/\D/g, '').slice(-CELDAS_TELEFONO),
           address,
           city,
           department,

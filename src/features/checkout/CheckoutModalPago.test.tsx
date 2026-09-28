@@ -172,9 +172,32 @@ describe('CheckoutModal pagando', () => {
       expect(post).toHaveBeenCalledWith(
         '/orders',
         expect.objectContaining({ cardToken: 'tok_test_123' }),
+        // La cabecera de sesión va en el tercer argumento. Sin ella el backend rechaza la
+        // orden con un 401 y no se cobra nada, y en esta prueba se ve a simple vista.
+        expect.objectContaining({ token: 'token-1' }),
       ),
     )
     expect(tokenizar).toHaveBeenCalledTimes(1)
+  })
+
+  it('el celular va como lo escribe quien compra, sin anteponer el indicativo', async () => {
+    // **El backend exige diez dígitos empezando por 3.** Antponer el `57` lo convertía en
+    // doce y el servidor rechazaba la orden con un 400 en el mensaje, que es la ultima
+    // razon por la que no se llegaba a cobrar nada. El indicativo no hace falta para nada:
+    // el numero se guarda, no se manda a la pasarela.
+    montar()
+    await waitFor(() => expect(get).toHaveBeenCalledWith('/payments/config'))
+    await rellenar()
+    await irAlResumen()
+
+    await userEvent.click(screen.getByRole('button', { name: /^pagar$/i }))
+
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith('/orders', expect.anything(), expect.anything()),
+    )
+    const llamada = post.mock.calls.find(([ruta]) => ruta === '/orders')
+    const [, cuerpo] = llamada as [string, { shipping: { phone: string } }]
+    expect(cuerpo.shipping.phone).toBe('3001234567')
   })
 
   it('el número de tarjeta no viaja en ninguna petición a nuestro backend', async () => {
@@ -185,7 +208,9 @@ describe('CheckoutModal pagando', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /^pagar$/i }))
 
-    await waitFor(() => expect(post).toHaveBeenCalledWith('/orders', expect.anything()))
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith('/orders', expect.anything(), expect.anything()),
+    )
     const llamada = post.mock.calls.find(([ruta]) => ruta === '/orders')
     const [, cuerpo] = llamada as [string, Record<string, unknown>]
     expect(JSON.stringify(cuerpo)).not.toContain('4111111111111111')

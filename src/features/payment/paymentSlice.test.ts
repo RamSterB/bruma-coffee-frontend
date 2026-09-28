@@ -58,8 +58,13 @@ const ENV: {
   },
 }
 
-const montar = () =>
-  configureStore({ reducer: { payment: paymentReducer } }) as never as {
+const montar = (accessToken: string | null = null) =>
+  configureStore({
+    reducer: {
+      payment: paymentReducer,
+      auth: (estado = { accessToken }) => estado,
+    },
+  }) as never as {
     dispatch: (accion: unknown) => unknown
     getState: () => { payment: ReturnType<typeof paymentReducer> }
   }
@@ -90,8 +95,32 @@ describe('paymentSlice', () => {
     expect(post).toHaveBeenCalledWith(
       '/orders',
       expect.objectContaining({ cardToken: 'tok_test_123' }),
+      expect.objectContaining({ token: undefined }),
     )
     expect(store.getState().payment.order).toEqual(orden)
+  })
+
+  it('manda la sesión al crear la orden, que es una operación de quien ha entrado', async () => {
+    // **Sin esta cabecera la orden se rechaza con 401 y no se cobra nada.** La creación de
+    // la orden es la única parte de la compra que necesita sesión, y sin ella el backend
+    // contesta que la sesión no vale. La prueba de unitarias no lo cazaba porque
+    // `httpClient` estaba simulado y nadie miraba la cabecera.
+    post.mockResolvedValue({
+      id: 'o1',
+      orderNumber: 'BC-1',
+      status: 'PENDING',
+      paymentStatus: 'PENDING',
+      total: 1,
+      paymentReference: 'tx-1',
+    })
+
+    await montar('tok_acceso').dispatch(payOrder(ENV))
+
+    expect(post).toHaveBeenCalledWith(
+      '/orders',
+      expect.objectContaining({ cardToken: 'tok_test_123' }),
+      expect.objectContaining({ token: 'tok_acceso' }),
+    )
   })
 
   it('no crea la orden si la tarjeta no se puede tokenizar', async () => {

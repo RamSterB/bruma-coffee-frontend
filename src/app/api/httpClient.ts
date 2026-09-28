@@ -8,11 +8,16 @@ export interface RequestOptions {
   token?: string
   signal?: AbortSignal
   /**
-   * Añade `X-CSRF-Token` con el valor de la cookie legible. Es lo que piden
-   * refresh y logout, porque son peticiones que se apoyan en la cookie y una
-   * cookie viaja sola, también si la petición la provoca otro sitio.
+   * Añade `X-CSRF-Token`, que es lo que piden refresh y logout: son peticiones que se
+   * apoyan en la cookie de refresh, y una cookie viaja sola aunque la provoke otro sitio.
+   *
+   * **Con un valor, manda ese valor. Con `true`, lee la cookie.** Y no es lo mismo: la
+   * cookie es del dominio de la API, y `document.cookie` solo ve las del sitio donde está
+   * la página. Con la tienda y la API en dominios distintos, como está desplegado, desde
+   * la tienda la cookie no se ve y el valor tiene que venir de donde sí se ve, que es el
+   * cuerpo del inicio de sesión.
    */
-  csrf?: boolean
+  csrf?: boolean | string
 }
 
 /** Nombre de la cookie que el backend deja legible a propósito, junto a la httpOnly. */
@@ -57,7 +62,7 @@ export const readCookie = (name: string): string | null => {
   return null
 }
 
-const buildHeaders = (body: unknown, token?: string, csrf = false): Headers => {
+const buildHeaders = (body: unknown, token?: string, csrf: boolean | string = false): Headers => {
   const headers = new Headers({ Accept: 'application/json' })
 
   if (body !== undefined) {
@@ -69,7 +74,7 @@ const buildHeaders = (body: unknown, token?: string, csrf = false): Headers => {
   }
 
   if (csrf) {
-    const valor = readCookie(CSRF_COOKIE)
+    const valor = typeof csrf === 'string' ? csrf : readCookie(CSRF_COOKIE)
 
     if (valor !== null && valor !== '') {
       headers.set('X-CSRF-Token', valor)

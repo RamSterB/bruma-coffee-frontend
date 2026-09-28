@@ -93,7 +93,7 @@ export const payOrder = createAsyncThunk<
   CreatedOrder,
   { card: CardFormValues; shipping: ShippingData; email: string; gateway: GatewayConfig },
   { state: RootState; rejectValue: string }
->('payment/payOrder', async ({ card, shipping, email, gateway }, { rejectWithValue }) => {
+>('payment/payOrder', async ({ card, shipping, email, gateway }, { getState, rejectWithValue }) => {
   const tokenizado = await tokenizeCard(
     {
       number: card.number,
@@ -108,11 +108,22 @@ export const payOrder = createAsyncThunk<
     return rejectWithValue(tokenizado.error)
   }
 
-  return httpClient.post<CreatedOrder>('/orders', {
-    cardToken: tokenizado.value,
-    email,
-    shipping,
-  })
+  // **La cabecera de sesión va aquí y no se puede quitar.** Crear la orden es la única
+  // parte de la compra que necesita saber quién compra, y sin esta cabecera el backend
+  // contesta que la sesión no vale y no se cobra nada. Se olvidó aquí porque el resto de
+  // los thunks sí la pasaban, y las pruebas de unitarias no lo vieron porque
+  // `httpClient` estaba simulado.
+  const token = getState().auth.accessToken
+
+  return httpClient.post<CreatedOrder>(
+    '/orders',
+    {
+      cardToken: tokenizado.value,
+      email,
+      shipping,
+    },
+    { token: token ?? undefined },
+  )
 })
 
 /**

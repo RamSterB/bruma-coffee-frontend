@@ -30,6 +30,12 @@ export interface AuthState {
    */
   accessToken: string | null
   user: UsuarioSesion | null
+  /**
+   * El token de CSRF, tal y como lo devuelve el servidor. Viaja en el cuerpo de la
+   * respuesta, no en una cookie legible desde aquí: con la tienda y la API en dominios
+   * distintos, la cookie es del dominio de la API y esta pagina no la ve.
+   */
+  csrfToken: string
   status: AuthStatus
   error: string | null
   /**
@@ -44,6 +50,7 @@ export interface AuthState {
 export const sesionInicial: AuthState = {
   accessToken: null,
   user: null,
+  csrfToken: '',
   status: 'iniciando',
   error: null,
   sesionSolicitada: false,
@@ -54,18 +61,25 @@ export const sesionInicial: AuthState = {
  * caso normal de quien entra sin registrarse: un 401 aquí no es un error que
  * enseñar, es la respuesta correcta a "no tienes sesión".
  */
-export const restoreSession = createAsyncThunk<Sesion | null, void, { rejectValue: string }>(
-  'auth/restore',
-  async (_void, { rejectWithValue }) => {
-    try {
-      return await httpClient.post<Sesion>('/auth/refresh', undefined, { csrf: true })
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof ApiError ? error.message : 'No se pudo recuperar la sesión',
-      )
-    }
-  },
-)
+export const restoreSession = createAsyncThunk<
+  Sesion | null,
+  void,
+  { state: { auth: AuthState }; rejectValue: string }
+>('auth/restore', async (_void, { getState, rejectWithValue }) => {
+  try {
+    // El token CSRF va explícito, y no leído de una cookie, porque con la tienda y la API
+    // en dominios distintos la cookie es del otro sitio y aquí no se ve. Sin esta cabecera
+    // el refresco sale rechazado, la sesión no se recupera al recargar, y quien lo pierde
+    // no recibe ningún aviso: solo aparece fuera de la sesión.
+    return await httpClient.post<Sesion>('/auth/refresh', undefined, {
+      csrf: getState().auth.csrfToken,
+    })
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ApiError ? error.message : 'No se pudo recuperar la sesión',
+    )
+  }
+})
 
 export interface Credenciales {
   email: string
@@ -113,16 +127,21 @@ export const signIn = createAsyncThunk<Sesion, Credenciales, { rejectValue: stri
  * falle, la sesión local se cierra igual: dejarla "medio cerrada" dejaría al
  * usuario creyendo que sigue dentro con un token vivo en memoria.
  */
-export const signOut = createAsyncThunk<void, void>('auth/signOut', async () => {
-  try {
-    await httpClient.post<{ message: string }>('/auth/logout', undefined, { csrf: true })
-  } catch {
-    // Se traga cualquier fallo, incluido uno que no sea un error de la API. La
-    // alternativa es que un corte de red deje a la persona con un token vivo en
-    // memoria y una pantalla que dice que acaba de cerrar la sesión. Cerrar
-    // sesión en el navegador tiene que ser algo que siempre pasa.
-  }
-})
+export const signOut = createAsyncThunk<void, void, { state: { auth: AuthState } }>(
+  'auth/signOut',
+  async (_void, { getState }) => {
+    try {
+      await httpClient.post<{ message: string }>('/auth/logout', undefined, {
+        csrf: getState().auth.csrfToken,
+      })
+    } catch {
+      // Se traga cualquier fallo, incluido uno que no sea un error de la API. La
+      // alternativa es que un corte de red deje a la persona con un token vivo en
+      // memoria y una pantalla que dice que acaba de cerrar la sesión. Cerrar
+      // sesión en el navegador tiene que ser algo que siempre pasa.
+    }
+  },
+)
 
 const authSlice = createSlice({
   name: 'auth',
@@ -134,18 +153,23 @@ const authSlice = createSlice({
     sesionRestaurada: (estado, accion: PayloadAction<Sesion>) => {
       estado.accessToken = accion.payload.accessToken
       estado.user = accion.payload.user
+      // El token de CSRF es lo que permite hablar con el servidor en las peticiones que se
+      // apoyan en la cookie de refresh. Sin guardarlo, esas peticiones salen sin cabecera.
+      estado.csrfToken = accion.payload.csrfToken
       estado.status = 'autenticada'
       estado.error = null
     },
     sesionCerrada: (estado) => {
       estado.accessToken = null
       estado.user = null
+      estado.csrfToken = ''
       estado.status = 'anonima'
       estado.error = null
     },
     sesionNoRestaurada: (estado) => {
       estado.accessToken = null
       estado.user = null
+      estado.csrfToken = ''
       estado.status = 'anonima'
       estado.error = null
     },

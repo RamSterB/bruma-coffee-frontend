@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "build": "tsc -b && vite build",
+    "build:publicacion": "node scripts/compilar-para-publicacion.mjs",
     "dev": "vite",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\" \"*.{json,md,yml,yaml}\" \"*.{ts,js}\" \"*.cjs\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.tsx\" \"*.{json,md,yml,yaml}\" \"*.{ts,js}\" \"*.cjs\"",
@@ -35,6 +36,7 @@
     "@babel/preset-typescript": "^7.29.7",
     "@eslint/js": "^9.0.0",
     "@jest/globals": "^30.5.2",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
