@@ -90,7 +90,9 @@ describe('AccountPage', () => {
     await waitFor(() => {
       expect(store.getState().auth.accessToken).toBeNull()
     })
-    expect(post).toHaveBeenCalledWith('/auth/logout', undefined, { csrf: true })
+    // El token de CSRF va explicito, no leido de una cookie: con la tienda y la API en
+    // dominios distintos esa cookie no se ve desde aqui, y el backend rechaza la peticion.
+    expect(post).toHaveBeenCalledWith('/auth/logout', undefined, { csrf: 'csrf-1' })
   })
 
   it('cerrar sesión devuelve a la tienda, en vez de dejar una pantalla de cuenta muerta', async () => {

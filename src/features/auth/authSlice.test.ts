@@ -39,6 +39,21 @@ describe('authSlice', () => {
     expect(estado.status).toBe('autenticada')
   })
 
+  it('guarda el token de CSRF que da el servidor', () => {
+    // Sin esto, el token se quedaba en el cuerpo de la respuesta y no se usaba nunca: las
+    // peticiones que dependen de la cookie de refresh salían sin cabecera y el backend las
+    // rechazaba. El estado lo declaraba, y por eso el fallo no se veía al leerlo.
+    const estado = authReducer(sesionInicial, sesionRestaurada(sesion))
+
+    expect(estado.csrfToken).toBe('csrf-1')
+  })
+
+  it('olvida el token de CSRF al cerrar sesión, para no reusarlo', () => {
+    const autenticada = authReducer(sesionInicial, sesionRestaurada(sesion))
+
+    expect(authReducer(autenticada, sesionCerrada()).csrfToken).toBe('')
+  })
+
   it('olvida el token al cerrar sesión, y no solo el usuario', () => {
     const autenticada = authReducer(sesionInicial, sesionRestaurada(sesion))
 
@@ -58,6 +73,7 @@ describe('authSlice', () => {
     expect(autenticada.accessToken).toBe('token-1')
     expect(Object.keys(authReducer(undefined, { type: 'desconocida' })).sort()).toEqual([
       'accessToken',
+      'csrfToken',
       'error',
       'sesionSolicitada',
       'status',

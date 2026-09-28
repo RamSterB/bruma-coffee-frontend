@@ -6,7 +6,8 @@ export default tseslint.config(
   // `cloudfront/` no es codigo de la aplicacion: son las funciones que ejecuta el
   // servicio de CDN. La de la tienda declara un `handler` que el runtime invoca, y a
   // eslint le parece una variable sin usar porque nadie la llama desde el codigo.
-  { ignores: ['dist', 'cloudfront/**'] },
+  // `scripts/` es Node puro (compila y publica) y `e2e/` corre en Node bajo Playwright.
+  { ignores: ['dist', 'cloudfront/**', 'scripts/**', 'e2e/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

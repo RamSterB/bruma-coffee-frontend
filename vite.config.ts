@@ -12,6 +12,12 @@ const apiUrl = process.env.VITE_API_URL ?? 'http://host.docker.internal:8000'
 // estamos en un modo o en otro para decidir si la URL se usa de una manera o de la
 // otra. En desarrollo el proxy devuelve cookies de la sesion, y en produccion la API
 // esta en otro dominio y tiene que hablar de frente.
+//
+// **Para publicar hay que ponerla, y `scripts/compilar-para-publicacion.mjs` no deja
+// compilar sin ella.** Con la cadena vacia las peticiones salen con ruta relativa, caen
+// en la distribucion de la tienda y el reescrito de rutas devuelve el `index.html` donde
+// se esperaba JSON: un 200 con HTML, que ni la consola ni la red señalan como error.
+// Aqui la comprobacion no puede estar porque CI tambien compila y no publica.
 const origenDeLaApi = process.env.VITE_API_ORIGIN ?? ''
 
 export default defineConfig({

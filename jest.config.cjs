@@ -49,6 +49,12 @@ module.exports = {
 
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 
+  // `e2e/` es de otro runner: lo ejecuta Playwright contra la tienda desplegada, con un
+  // navegador de verdad, y no puede correr dentro de Jest. Sin esto, Jest las recoge y
+  // falla al no encontrar `TransformStream`, que es un global de Node que el entorno de
+  // jsdom no trae.
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/e2e/'],
+
   // Mismo criterio que Vitest: solo los archivos de src, sin los propios tests.
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',

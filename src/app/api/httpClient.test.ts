@@ -167,7 +167,21 @@ describe('httpClient', () => {
     expect(fetchMock.mock.calls[0]?.[1]?.credentials).toBe('include')
   })
 
-  it('manda la cabecera X-CSRF-Token con el valor de la cookie legible', async () => {
+  it('manda la cabecera X-CSRF-Token con el valor que le da quien llama', async () => {
+    // **La cookie no sirve cuando la tienda y la API están en dominios distintos**, que es
+    // como está desplegado: la cookie CSRF es del dominio de la API y `document.cookie`
+    // solo ve las del sitio donde está la página, así que desde la tienda no se ve. El
+    // valor llega en el cuerpo del inicio de sesión, que es de donde sale.
+    document.cookie = ''
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true }))
+
+    await httpClient.post('/auth/refresh', undefined, { csrf: 'valor-del-servidor' })
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers
+    expect(headers.get('X-CSRF-Token')).toBe('valor-del-servidor')
+  })
+
+  it('usa la cookie legible cuando quien llama no pasa valor, para despliegues del mismo origen', async () => {
     document.cookie = 'csrf_token=valor-de-la-cookie'
     fetchMock.mockResolvedValue(jsonResponse({ ok: true }))
 

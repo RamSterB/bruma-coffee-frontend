@@ -22,3 +22,5 @@ coverage/
 # que salen de un comando, y commitearlos engorda el repo con datos que nadie lee.
 # Se instala con:  npm install -g ui-ux-pro-max-cli && uipro init --ai opencode
 .opencode/skills/ui-ux-pro-max/
+test-results/
+playwright-report/
