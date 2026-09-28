@@ -134,9 +134,15 @@ export const fetchOrderStatus = createAsyncThunk<
   OrderStatus,
   string,
   { state: RootState; rejectValue: string }
->('payment/fetchOrderStatus', async (orderId, { rejectWithValue }) => {
+>('payment/fetchOrderStatus', async (orderId, { getState, rejectWithValue }) => {
   try {
-    return await httpClient.get<OrderStatus>(`/orders/${orderId}`)
+    // **La cabecera de sesión va aquí y no se puede quitar.** Consultar el estado de una
+    // orden es leer datos de quien compró: sin cabecera el backend responde 401 y la
+    // pantalla de resultado se queda en "confirmando tu pago" para siempre, aunque el
+    // pago se haya aprobado a los pocos segundos.
+    const token = getState().auth.accessToken
+
+    return await httpClient.get<OrderStatus>(`/orders/${orderId}`, { token: token ?? undefined })
   } catch (error) {
     return rejectWithValue(
       error instanceof ApiError ? error.message : 'No pudimos consultar el estado de la compra',

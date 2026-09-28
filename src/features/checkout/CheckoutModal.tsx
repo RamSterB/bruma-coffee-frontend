@@ -65,6 +65,14 @@ const celdasDelTelefono = (valor: string): number =>
  * tal cual. El formulario solo comprueba lo que es obvio sin red, como que el
  * teléfono tenga diez dígitos o que la tarjeta pase el algoritmo de Luhn.
  */
+/**
+ * Cuantas veces se pregunta por el veredicto y con que pausa. Veinte veces cada dos
+ * segundos son cuarenta segundos, que es de sobra para una pasarela y corto para que
+ * quien espera no se canse.
+ */
+const INTENTOS_POR_VEREDICTO = 20
+const PAUSA_ENTRE_PREGUNTAS_MS = 2000
+
 export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
   const dispatch = useAppDispatch()
   const navegar = useNavigate()
@@ -200,13 +208,42 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
     }
 
     setPaso(2)
-    const estadoFinal = await dispatch(fetchOrderStatus(creada.payload.id))
+    await esperarElVeredicto(creada.payload.id)
+  }
 
-    if (
-      fetchOrderStatus.fulfilled.match(estadoFinal) &&
-      estadoFinal.payload.paymentStatus === 'APPROVED'
-    ) {
-      limpiarElCarrito()
+  /**
+   * Pregunta por el estado de la orden hasta que la pasarela se pronuncie.
+   *
+   * **Preguntar una sola vez no vale, y por eso esto es un bucle.** La orden nace en
+   * PENDING y la pasarela tarda unos segundos en decir si la aprueba. Una sola consulta
+   * hecha en el acto devuelve PENDING casi siempre, y la pantalla se queda en
+   * "confirmando tu pago" para siempre aunque el pago se haya aprobado a los cinco
+   * segundos. Terminaría antes de tiempo solo si la pasarela no contesta, y entonces
+   * enseñamos lo que haya sin inventar un resultado.
+   */
+  const esperarElVeredicto = async (orderId: string) => {
+    for (let intento = 0; intento < INTENTOS_POR_VEREDICTO; intento += 1) {
+      if (intento > 0) {
+        await new Promise<void>((resolver) => {
+          setTimeout(resolver, PAUSA_ENTRE_PREGUNTAS_MS)
+        })
+      }
+
+      const consulta = await dispatch(fetchOrderStatus(orderId))
+
+      if (!fetchOrderStatus.fulfilled.match(consulta)) {
+        return
+      }
+
+      const estado = consulta.payload.paymentStatus
+
+      if (estado !== 'PENDING') {
+        if (estado === 'APPROVED') {
+          limpiarElCarrito()
+        }
+
+        return
+      }
     }
   }
 

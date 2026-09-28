@@ -44,6 +44,49 @@ const entrar = async (page: Page) => {
   await expect(page.getByRole('link', { name: 'Mi cuenta' })).toBeVisible()
 }
 
+/**
+ * Deja el carrito vacío, quitando línea a línea.
+ *
+ * **Hace falta porque el carrito vive en el servidor.** Sin esto, la compra de esta
+ * prueba arrastraría lo que dejaron las anteriores, se cobraría todo junto —que es lo
+ * correcto— y la comprobación de que el stock baja uno en uno no tendría sentido. Se
+ * quita con los botones de la propia pantalla, que es lo que haría quien está delante.
+ */
+const vaciarElCarrito = async (page: Page) => {
+  // El carrito se baja del servidor al entrar y llega después. Si se cuenta antes de que
+  // llegue, el contador dice cero, no se quita nada y la compra arrastra lo que dejaron
+  // las pruebas anteriores. Por eso se espera a que el número se quede quieto.
+  let quieto = -1
+
+  for (let intento = 0; intento < 20; intento += 1) {
+    const actual = await contarCarrito(page)
+
+    if (actual === quieto) {
+      break
+    }
+
+    quieto = actual
+    await page.waitForTimeout(500)
+  }
+
+  // Se quita línea a línea hasta vaciar. **No se cuenta cuántas líneas hay:** el número
+  // de la cabecera son unidades y quitar una línea puede llevarse varias de golpe, así
+  // que suponer que cada clic baja el contador en uno no se sostiene.
+  for (let intento = 0; intento < 20; intento += 1) {
+    if ((await contarCarrito(page)) === 0) {
+      break
+    }
+
+    await page.getByRole('button', { name: /Carrito con \d+ unidades/ }).click()
+    await expect(page.getByRole('dialog', { name: 'Tu carrito' })).toBeVisible()
+    await page.getByRole('button', { name: 'Quitar del carrito' }).first().click()
+    await page.waitForTimeout(400)
+    await page.getByRole('button', { name: 'Cerrar' }).click()
+  }
+
+  await expect.poll(() => contarCarrito(page)).toBe(0)
+}
+
 const abrirVistaRapida = async (page: Page) => {
   await page.getByRole('button', { name: `Detalle de ${CAFE}` }).click()
   await expect(page.getByRole('button', { name: 'Agregar al carrito' })).toBeVisible()
@@ -108,9 +151,16 @@ const contarCarrito = async (page: Page): Promise<number> => {
   return encontrado ? Number(encontrado[1]) : -1
 }
 
-/** Las unidades que quedan de la variante elegida, leídas de su propia etiqueta. */
+/**
+ * Las unidades que quedan de la variante elegida.
+ *
+ * El texto se lee de la etiqueta que envuelve al botón, y no del botón: un `input` no
+ * tiene texto propio, así que leerlo devuelve siempre cadena vacía.
+ */
 const leerStockDeLaVarianteElegida = async (page: Page): Promise<number> => {
-  const etiqueta = await page.getByRole('radio', { checked: true }).textContent()
+  const etiqueta = await page
+    .getByRole('radio', { checked: true })
+    .evaluate((boton) => boton.closest('label')?.textContent ?? '')
   const encontrado = etiqueta?.match(/(\d+)\s+disponibles/)
 
   return encontrado ? Number(encontrado[1]) : -1
@@ -157,6 +207,7 @@ test('3. la compra llega al resumen, se cobra y vuelve al producto con el stock 
 }) => {
   await abrirCatalogo(page)
   await entrar(page)
+  await vaciarElCarrito(page)
 
   // El stock se lee con la ficha abierta, **no dentro del proceso de compra**: ese modal
   // sustituye a la ficha, así que una vez dentro ya no hay ninguna variante marcada.

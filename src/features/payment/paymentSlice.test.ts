@@ -123,6 +123,24 @@ describe('paymentSlice', () => {
     )
   })
 
+  it('pregunta por el estado de la compra con la sesion, que es una orden de quien la hizo', async () => {
+    // **Sin esta cabecera el estado sale rechazado con 401 y la pantalla se queda en
+    // "confirmando tu pago" para siempre.** Es el cuarto sitio que se olvidaba de la
+    // sesion, y el que mas tiempo ha costado: la compra se creaba bien, pero nadie se
+    // enteraba nunca de como acababa.
+    get.mockResolvedValue({
+      id: 'o1',
+      orderNumber: 'BC-1',
+      status: 'PAID',
+      paymentStatus: 'APPROVED',
+      total: 1,
+    })
+
+    await montar('tok_acceso').dispatch(fetchOrderStatus('o1'))
+
+    expect(get).toHaveBeenCalledWith('/orders/o1', expect.objectContaining({ token: 'tok_acceso' }))
+  })
+
   it('no crea la orden si la tarjeta no se puede tokenizar', async () => {
     mockTokenize.mockResolvedValue({ ok: false, error: 'La tarjeta no es válida' })
     const store = montar()
