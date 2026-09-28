@@ -1,8 +1,8 @@
 /**
  * Configuración de Jest para el frontend.
  *
- * Sustituye a `vitest.config.ts`, que quedó reemplazada por [[ADR-013]]: el enunciado
- * de la prueba pide Jest de forma literal en los dos repos.
+ * Sustituye a `vitest.config.ts`: Jest es el runner de los dos repos, y en este se
+ * migró desde Vitest para que ambos tuvieran el mismo.
  *
  * Lo que Vitest heredaba de `vite.config.ts` y aquí hay que replicar a mano, porque
  * Jest no lee la configuración de Vite:
@@ -59,7 +59,7 @@ module.exports = {
   ],
   coverageReporters: ['text', 'html'],
 
-  // RNF-10.3.1: el piso es >85 % en los cuatro indicadores. Es un piso, no un techo.
+  // El piso de cobertura está en 86 % en los cuatro indicadores. Es un piso, no un techo.
   // Se mantiene el mismo 86 que usaba Vitest: la migración cambia el runner, no el
   // listón.
   coverageThreshold: {

@@ -56,7 +56,7 @@ const SESION: Sesion = {
 
 const CONFIG = {
   publicKey: 'pub_test_una',
-  baseUrl: 'https://sandbox.wompi.co/v1',
+  baseUrl: 'https://api.pruebas.proveedor.example/v1',
   environment: 'sandbox' as const,
 }
 

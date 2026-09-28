@@ -72,8 +72,8 @@ describe('el foco en el cajon de la compra', () => {
     await userEvent.keyboard('{Escape}')
 
     await waitFor(() => expect(cajon()).toBeNull())
-    // Es el criterio de US-21 literal: el foco vuelve a donde estaba. Sin esto, quien
-    // cierra el cajon tiene que recorrer la pagina otra vez para saber donde esta.
+    // El foco vuelve a donde estaba. Sin esto, quien cierra el cajón tiene que
+    // recorrer la página otra vez para saber dónde está.
     expect(boton).toHaveFocus()
   })
 

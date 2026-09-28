@@ -45,8 +45,8 @@ const CREADO = 'CREATED'
  *
  * Esta función es la razón de que el número no llegue nunca a nuestros servidores:
  * el POST va directo a la pasarela con la llave pública, y lo único que vuelve a
- * nuestra aplicación es el token. El backend no ve el número en ningún momento
- * (ADR-006).
+ * nuestra aplicación es el token. El backend no ve el número en ningún momento: no
+ * pasa por este servidor, y por eso no puede guardarlo ni registrarlo por accidente.
  */
 export const tokenizeCard = async (
   tarjeta: CardTokenizationInput,

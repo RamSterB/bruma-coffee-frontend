@@ -87,7 +87,7 @@ const ESTADO_APROBADO = {
 
 const CONFIG = {
   publicKey: 'pub_test_una',
-  baseUrl: 'https://api-sandbox.co.uat.wompi.dev/v1',
+  baseUrl: 'https://api.pruebas.proveedor.example/v1',
   environment: 'sandbox' as const,
 }
 
