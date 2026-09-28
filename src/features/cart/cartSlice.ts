@@ -82,9 +82,16 @@ const conToken = (estado: RootState) =>
 
 const haySesion = (estado: RootState): boolean => estado.auth.status === 'autenticada'
 
-/** Las líneas del servidor se convierten al mismo formato que pinta el cajón. */
+/**
+ * Las líneas del servidor se convierten al mismo formato que pinta el cajón.
+ *
+ * `?? []` por lo mismo que en el reductor: si la respuesta no trae lista, el cajón se
+ * queda vacío en vez de dejar la pantalla en blanco. Es el mismo tipo de fallo que
+ * se vio con el resumen de la orden, y aquí además cae sobre la última pantalla del
+ * proceso de compra.
+ */
 const aLineas = (carrito: CartDelServidor): CartLine[] =>
-  carrito.items.map((linea) => ({
+  (carrito?.items ?? []).map((linea) => ({
     item: { variantId: linea.variantId, quantity: linea.quantity },
     variant: {
       variantId: linea.variantId,
@@ -342,7 +349,11 @@ export const cartSlice = createSlice({
     },
     /** El servidor contesta con el carrito entero: se sustituye todo por él. */
     delServidor: (state, action: PayloadAction<CartDelServidor>) => {
-      state.items = action.payload.items.map((linea) => ({
+      // `?? []` por la misma razón que en el resumen de la orden: una respuesta que
+      // no venga como esperamos no puede dejar la pantalla en blanco. Y esto ya no es
+      // hipotético: tras cobrar se vuelve a pedir el carrito, así que una respuesta
+      // rara cae justo en la pantalla de resultado del pago.
+      state.items = (action.payload?.items ?? []).map((linea) => ({
         variantId: linea.variantId,
         quantity: linea.quantity,
       }))

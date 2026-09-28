@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import { cartReducer, resolveCart } from './cartSlice'
+import { cartReducer, cartSlice, resolveCart } from './cartSlice'
 import type { CartState } from './cartSlice'
 import type { CartVariant } from './types'
 
@@ -208,5 +208,16 @@ describe('cartSlice', () => {
 
     expect(estado.status).toBe('error')
     expect(estado.error).toBe('No se pudo resolver el carrito')
+  })
+})
+
+describe('la respuesta del carrito', () => {
+  it('si viene sin lista de líneas, el carrito queda vacío y no se rompe la pantalla', () => {
+    // Una respuesta que no sea la esperada no puede dejar la pantalla en blanco, y
+    // esto ya no es hipotético: tras cobrar se vuelve a pedir el carrito y el fallo
+    // cae en la pantalla de resultado del pago, que es la última que se ve.
+    const estado = cartReducer(estadoInicial, cartSlice.actions.delServidor({} as never))
+
+    expect(estado.items).toEqual([])
   })
 })

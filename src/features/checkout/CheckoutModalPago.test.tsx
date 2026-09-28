@@ -113,6 +113,10 @@ describe('CheckoutModal pagando', () => {
       if (ruta.includes('/cart/summary')) {
         return Promise.resolve(DESGLOSE) as never
       }
+      if (ruta === '/cart') {
+        // Tras cobrar, el modal vuelve a pedir el carrito para que se vea vacío.
+        return Promise.resolve({ items: [] }) as never
+      }
       if (ruta.includes('/payments/config')) {
         return Promise.resolve(CONFIG) as never
       }

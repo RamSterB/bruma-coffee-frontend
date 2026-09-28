@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Alert,
   Box,
@@ -26,6 +27,8 @@ import {
   validateExpiry,
 } from '../../lib/cardValidation'
 import { CardForm, type CardFormValues } from './CardForm'
+import { clearSavedCart } from '../cart/cartStorage'
+import { clearCart, resolveCart } from '../cart/cartSlice'
 import {
   fetchCities,
   fetchDepartments,
@@ -64,6 +67,7 @@ const celdasDelTelefono = (valor: string): number =>
  */
 export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
   const dispatch = useAppDispatch()
+  const navegar = useNavigate()
   const summary = useAppSelector(selectSummary)
   const pago = useAppSelector((estado) => estado.payment)
   const correoDeLaSesion = useAppSelector((estado) => estado.auth.user?.email ?? '')
@@ -132,6 +136,28 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
     department !== '' &&
     city !== ''
 
+  /**
+   * El último paso del proceso: volver a la ficha del café con el stock ya
+   * descontado. Antes este botón solo cerraba el modal, así que el paso no existía;
+   * un botón que dice "Ver el café" y no lleva al café es peor que no tenerlo.
+   */
+  const volverAlCafe = (variantId: string) => {
+    onClose()
+    navegar(variantId === '' ? '/cafes' : `/cafe/${variantId}`)
+  }
+
+  /**
+   * El carrito se vacía aquí, no al abrir el modal ni antes de cobrar. Al backend ya
+   * lo vacía el mismo evento que confirma el pago; esto es lo que se ve en pantalla,
+   * y sin esto quien paga vuelve a ver sus cafés en el cajón y no sabe si se le
+   * cobró dos veces.
+   */
+  const limpiarElCarrito = () => {
+    dispatch(clearCart())
+    clearSavedCart()
+    void dispatch(resolveCart())
+  }
+
   const pagando = pago.status === 'tokenizing'
 
   /**
@@ -170,7 +196,14 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
     }
 
     setPaso(2)
-    await dispatch(fetchOrderStatus(creada.payload.id))
+    const estadoFinal = await dispatch(fetchOrderStatus(creada.payload.id))
+
+    if (
+      fetchOrderStatus.fulfilled.match(estadoFinal) &&
+      estadoFinal.payload.paymentStatus === 'APPROVED'
+    ) {
+      limpiarElCarrito()
+    }
   }
 
   const continuar = async (evento: FormEvent) => {
@@ -236,7 +269,8 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
             <PaymentResult
               estado={pago.finalStatus}
               cargando={pago.status === 'waiting'}
-              onVolverAlCafe={onClose}
+              purchasedVariantId={pago.purchasedVariantId}
+              onVolverAlCafe={volverAlCafe}
             />
           ) : paso === 0 ? (
             <Box component="form" onSubmit={continuar} noValidate>

@@ -26,6 +26,8 @@ export interface CreatedOrder {
   paymentStatus: string
   total: number
   paymentReference: string
+  /** La primera variante comprada, para poder volver a su ficha. */
+  items?: { variantId: string }[]
 }
 
 export interface OrderStatus {
@@ -42,6 +44,8 @@ export interface PaymentState {
   order: CreatedOrder | null
   finalStatus: OrderStatus | null
   gateway: GatewayConfig | null
+  /** Variante comprada, para el paso de volver al producto con el stock descontado. */
+  purchasedVariantId: string | null
   error: string | null
 }
 
@@ -50,6 +54,7 @@ const inicial: PaymentState = {
   order: null,
   finalStatus: null,
   gateway: null,
+  purchasedVariantId: null,
   error: null,
 }
 
@@ -146,6 +151,7 @@ const paymentSlice = createSlice({
       .addCase(payOrder.fulfilled, (state, action) => {
         state.status = 'waiting'
         state.order = action.payload
+        state.purchasedVariantId = action.payload.items?.[0]?.variantId ?? null
         state.error = null
       })
       .addCase(payOrder.rejected, (state, action) => {
