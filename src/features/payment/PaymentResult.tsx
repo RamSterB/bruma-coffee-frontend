@@ -5,6 +5,8 @@ import type { OrderStatus } from './paymentSlice'
 export interface PaymentResultProps {
   estado: OrderStatus | null
   cargando: boolean
+  /** Variante comprada, a la que se vuelve. Sin ella no hay a dónde ir. */
+  purchasedVariantId: string | null
   /** Café al que volver. Es el último paso del proceso: ver el stock ya descontado. */
   onVolverAlCafe: (variantId: string) => void
 }
@@ -14,7 +16,12 @@ export interface PaymentResultProps {
  * qué pasó con el dinero, con número de orden para pedir referencias, y ofrece
  * volver al café con el stock ya descontado.
  */
-export function PaymentResult({ estado, cargando, onVolverAlCafe }: PaymentResultProps) {
+export function PaymentResult({
+  estado,
+  cargando,
+  purchasedVariantId,
+  onVolverAlCafe,
+}: PaymentResultProps) {
   if (cargando || estado === null) {
     return (
       <Stack spacing={2} sx={{ alignItems: 'center', py: 4 }} role="status">
@@ -60,7 +67,7 @@ export function PaymentResult({ estado, cargando, onVolverAlCafe }: PaymentResul
         )}
       </Stack>
 
-      <Button variant="contained" onClick={() => onVolverAlCafe('')}>
+      <Button variant="contained" onClick={() => onVolverAlCafe(purchasedVariantId ?? '')}>
         {aprobado ? 'Ver el café' : 'Intentar de nuevo'}
       </Button>
     </Stack>
