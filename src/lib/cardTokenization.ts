@@ -97,7 +97,9 @@ export const tokenizeCard = async (
 /** El primer mensaje de la pasarela, y no el código: quien lee esto es quien compró. */
 const mensajeDeLaPasarela = (cuerpo: TokenizationResponse): string => {
   const mensajes = cuerpo.error?.messages ?? {}
-  const primero = Object.values(mensajes).flat().find((mensaje) => mensaje.length > 0)
+  const primero = Object.values(mensajes)
+    .flat()
+    .find((mensaje) => mensaje.length > 0)
 
   return primero ?? 'La tarjeta no se pudo validar. Revisa los datos e inténtalo otra vez.'
 }
