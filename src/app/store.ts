@@ -7,12 +7,14 @@ import { authReducer, restoreSession, signIn, signOut } from '../features/auth/a
 import { paymentReducer } from '../features/payment/paymentSlice'
 import { checkoutReducer } from '../features/checkout/checkoutSlice'
 import { clearCart, syncLocalCartOnSignIn } from '../features/cart/cartSlice'
+import { ordersReducer } from '../features/orders/ordersSlice'
 
 export const rootReducer = combineSlices(coffeeSlice, coffeeDetailSlice, {
   cart: cartReducer,
   auth: authReducer,
   checkout: checkoutReducer,
   payment: paymentReducer,
+  orders: ordersReducer,
 })
 
 /**
