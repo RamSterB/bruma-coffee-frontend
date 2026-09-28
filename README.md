@@ -159,6 +159,7 @@ total antes de poder corregir nada de lo que lo produce.
    **El número completo no aparece en el dibujo**, ni en el texto ni en el nombre
    accesible. Se muestran los últimos cuatro, que es lo justo para distinguir una
    tarjeta de otra. El PAN sigue viviendo solo en el estado en memoria del modal.
+
 3. Al validar, el **resumen**: productos, subtotal, envío, IVA del 19 % y total, con
    el botón de pago. Si el envío quedó gratis, dice "Envío gratis" y no un cero,
    que parece un error de cálculo.

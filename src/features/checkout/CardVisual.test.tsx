@@ -58,19 +58,31 @@ describe('CardVisual', () => {
     expect(mastercard).toBe('MASTERCARD')
   })
 
-  it('pone el nombre de la marca, que es lo que hace falta sin mirar el color', () => {
-    // El color solo no vale: dos personas no distinguen el mismo tono. El nombre
-    // escrito es lo que dice la verdad a todo el mundo.
+  it('enseña el logo de la marca, con su nombre accesible', () => {
+    // El logo es una imagen y no un texto: quien navega con lector de pantalla no
+    // lee un SVG. Por eso el nombre va en el aria-label del propio logo, y no
+    // dependemos de un texto al lado que se pueda borrar sin que nadie se entere.
     render(<CardVisual values={valores()} brand="MASTERCARD" />)
 
-    expect(screen.getByText('Mastercard')).toBeInTheDocument()
+    const logo = screen.getByRole('img', { name: 'Mastercard' })
+    expect(logo.tagName.toLowerCase()).toBe('svg')
   })
 
-  it('con marca desconocida no finge una marca que no es', () => {
+  it('enseña el logo de Visa y no el de Mastercard cuando la marca es Visa', () => {
+    render(<CardVisual values={valores()} brand="VISA" />)
+
+    expect(screen.getByRole('img', { name: 'Visa' })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Mastercard' })).toBeNull()
+  })
+
+  it('con marca desconocida no enseña ningún logo, porque no hay ninguna que enseñe', () => {
+    // Un logo de Visa sobre una tarjeta que no es Visa afirma algo falso. El hueco
+    // es la información correcta, y además el `data-marca` sigue diciendo
+    // DESCONOCIDA para quien mire el marcado.
     render(<CardVisual values={valores({ number: '9999 9999 9999 9999' })} brand="DESCONOCIDA" />)
 
-    expect(screen.queryByText('Visa')).toBeNull()
-    expect(screen.queryByText('Mastercard')).toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.getByTestId('tarjeta-dibujada')).toHaveAttribute('data-marca', 'DESCONOCIDA')
   })
 
   it('se dibuja mientras se escribe, sin esperar a salir del campo', () => {
@@ -89,7 +101,7 @@ describe('CardVisual', () => {
       />,
     )
 
-    expect(screen.getByText('Mastercard')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Mastercard' })).toBeInTheDocument()
   })
 
   it('ocupa el ancho disponible sin salirse en pantalla pequeña', () => {

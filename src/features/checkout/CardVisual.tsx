@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material'
-import CreditCardIcon from '@mui/icons-material/CreditCard'
 import type { CardBrand } from '../../lib/cardValidation'
+import { BrandLogo } from './brandLogos'
 
 export interface CardVisualValues {
   number: string
@@ -14,16 +14,10 @@ export interface CardVisualProps {
   brand: CardBrand
 }
 
-const NOMBRES: Record<CardBrand, string> = {
-  VISA: 'Visa',
-  MASTERCARD: 'Mastercard',
-  DESCONOCIDA: '',
-}
-
 /**
- * Fondo por marca. El color solo **no** identifica una tarjeta: hay dos puntos de
- * vista que no distinguen un tono de otro, y ahí el color dice cualquier cosa. Por
- * eso el nombre de la marca va **escrito** al lado, y el color solo acompaña.
+ * Fondo por marca. El color acompaña al logo pero **no** lo sustituye: hay puntos de
+ * vista que no distinguen un tono de otro, y ahí el color dice cualquier cosa. Por eso
+ * el logo va con su nombre en el `aria-label`, y no solo como imagen.
  */
 const FONDO: Record<CardBrand, string> = {
   VISA: 'linear-gradient(135deg, #1a1f71 0%, #2b50a0 60%, #4a6fd4 100%)',
@@ -52,14 +46,12 @@ const enMayusculas = (valor: string): string => valor.trim().toUpperCase()
 /**
  * La tarjeta dibujada.
  *
- * Antes esto era un campo de texto con un icono al lado, y no llamaba la atención
- * de nadie. Ahora es un objeto reconocible: la forma, el chip, la marca, el titular
- * y los últimos cuatro. Es la pantalla que sostiene la confianza del pago, y no
- * puede parecer un formulario más.
+ * Antes esto era un campo de texto con un icono al lado, y no llamaba la atención de
+ * nadie. Ahora es un objeto reconocible: la forma, el chip, el logo de la red, el
+ * titular y los últimos cuatro. Es la pantalla que sostiene la confianza del pago, y
+ * no puede parecer un formulario más.
  */
 export function CardVisual({ values, brand }: CardVisualProps) {
-  const Supported = brand !== 'DESCONOCIDA'
-
   return (
     <Box
       data-testid="tarjeta-dibujada"
@@ -91,16 +83,13 @@ export function CardVisual({ values, brand }: CardVisualProps) {
               background: 'linear-gradient(135deg, #f2d98b, #c9a94e)',
             }}
           />
-          <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', minWidth: 0 }}>
-            {Supported && (
-              <>
-                <CreditCardIcon sx={{ fontSize: 22, opacity: 0.9 }} />
-                <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: 0.4 }}>
-                  {NOMBRES[brand]}
-                </Typography>
-              </>
-            )}
-          </Stack>
+          {/* El logo lleva su nombre en el `aria-label`, así que el dato de la marca
+              no se pierde para quien navega con lector de pantalla. Con marca
+              desconocida no hay logo: un logo de Visa sobre una tarjeta que no es
+              Visa afirma algo falso, y el hueco dice la verdad. */}
+          <Box sx={{ display: 'flex', alignItems: 'center', minHeight: 30 }}>
+            <BrandLogo brand={brand} />
+          </Box>
         </Stack>
 
         <Typography
