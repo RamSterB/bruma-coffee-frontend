@@ -46,7 +46,7 @@ const EXITO = {
   },
 }
 
-const CONFIG = { publicKey: 'pub_test_una', baseUrl: 'https://sandbox.wompi.co/v1' }
+const CONFIG = { publicKey: 'pub_test_una', baseUrl: 'https://api.pruebas.proveedor.example/v1' }
 
 describe('tokenizeCard', () => {
   it('manda el número, el vencimiento, el código y el titular a la pasarela', async () => {
@@ -139,7 +139,7 @@ describe('tokenizeCard', () => {
 
     await tokenizeCard(TARJETA, CONFIG, fetch)
 
-    expect(llamadas[0]?.url).toBe('https://sandbox.wompi.co/v1/tokens/cards')
+    expect(llamadas[0]?.url).toBe('https://api.pruebas.proveedor.example/v1/tokens/cards')
   })
 
   it('devuelve el token aunque la respuesta traiga la fecha de validez, que no interesa aquí', async () => {

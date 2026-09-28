@@ -47,7 +47,7 @@ const ENV: {
   email: 'comprador@ejemplo.co',
   gateway: {
     publicKey: 'pub_test_una',
-    baseUrl: 'https://sandbox.wompi.co/v1',
+    baseUrl: 'https://api.pruebas.proveedor.example/v1',
     environment: 'sandbox',
   },
   card: {
@@ -173,7 +173,7 @@ describe('paymentSlice', () => {
   it('trae la configuración pública de la pasarela del backend, no del bundle', async () => {
     const config = {
       publicKey: 'pub_test_una',
-      baseUrl: 'https://sandbox.wompi.co/v1',
+      baseUrl: 'https://api.pruebas.proveedor.example/v1',
       environment: 'sandbox' as const,
     }
     get.mockResolvedValue(config)
