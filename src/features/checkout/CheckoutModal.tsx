@@ -247,7 +247,14 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth aria-label="Pagar mi pedido">
+      {/*
+        Sin `aria-label` en la raíz a propósito. El nombre del diálogo lo pone el
+        `DialogTitle` de abajo, que es el texto que se ve. Con el `aria-label` aquí
+       jaiado, el atributo，看起来已经设置好了，其实没有：quien lo lea cree que el
+        nombre está resuelto, y si mañana se quita el título el diálogo se queda
+        mudo sin que nada avise.
+      */}
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
         <DialogTitle>Finalizar compra</DialogTitle>
 
         <DialogContent>

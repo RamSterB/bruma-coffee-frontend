@@ -18,6 +18,11 @@ import {
  * tienda entera, no de una vista. El contador sale del store, así que
  * cualquier página que añada algo lo refleja sin saber nada del cajón.
  */
+/** Lleva el foco al contenido, que es lo que hace falta al saltar el enlace. */
+const llevarElFocoAlContenido = () => {
+  document.getElementById('contenido')?.focus()
+}
+
 export function AppLayout() {
   const [carritoAbierto, setCarritoAbierto] = useState(false)
   const [resumenAbierto, setResumenAbierto] = useState(false)
@@ -45,6 +50,30 @@ export function AppLayout() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/*
+        El enlace para saltar al contenido, antes que nada en el DOM.
+
+        Sin el, quien navega con teclado recorre el logo, los enlaces y el carrito en
+        **cada** pagina, y el contenido nunca es lo que sigue al primer Tab. Con el,
+        el primer Tab ya es una salida.
+
+        Va oculto con `sr-only` y se revela con `not-sr-only` al recibir el foco, que
+        es el motivo por el que se llama así: no molesta a quien no lo necesita y
+        aparece justo a quien lo necesita.
+
+        El `onClick` está porque mover el foco al destino no es automático: el
+        navegador solo lo hace si el destino es enfocable, y por eso `main` lleva
+        `tabIndex={-1}`. Con las dos cosas, funciona igual en un navegador y en las
+        pruebas, que no interpretan el `href`.
+      */}
+      <a
+        href="#contenido"
+        onClick={llevarElFocoAlContenido}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded focus:bg-amber-400 focus:px-4 focus:py-2 focus:font-medium focus:text-neutral-900"
+      >
+        Saltar al contenido
+      </a>
+
       <AppBar position="sticky">
         <Toolbar>
           <Stack direction="row" spacing={2} sx={{ alignItems: 'center', width: '100%' }}>
@@ -87,7 +116,7 @@ export function AppLayout() {
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ flexGrow: 1 }}>
+      <Box component="main" id="contenido" tabIndex={-1} sx={{ flexGrow: 1 }}>
         {/* El Outlet recibe el manejador para que la ficha pueda abrir el modal
             de pago sin tener que importarlo ni saber del store. */}
         <Outlet context={{ abrirPago: () => setResumenAbierto(true) }} />

@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+/*
+ * Anillo de foco visible en TODO control.
+ *
+ * No había ninguna regla de foco en el proyecto, y las dos skills del repo lo piden
+ * explícitamente. La confianza iba en el anillo por defecto del navegador, que es un
+ * detalle de la plataforma y no una decisión: cambia con el sistema, con el tema y
+ * con el modo de alto contraste, y en varios navegadores no aparece si el elemento
+ * tiene un fondo propio.
+ *
+ * `:focus-visible` y no `:focus` a propósito: el anillo sale al navegar con teclado y
+ * no al pinchar con el ratón, que es donde estorba.
+ *
+ * El desplazamiento de 2 px es lo que separa el anillo del borde del control. Sin él,
+ * en un botón relleno el anillo queda pegado y no se distingue.
+ *
+ * **No hay test de esto.** jsdom no resuelve pseudo-clases, así que un test solo
+ * comprobaría que el fichero de estilos menciona `:focus-visible`, que es otra cosa
+ * distinta y además es justo el tipo de aserción que comprueba la forma y no el
+ * comportamiento. Se verifica abriendo el sitio y tabulando, en la vuelta de
+ * navegador real del final.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-amber-400);
+  outline-offset: 2px;
+  border-radius: 2px;
+}

@@ -109,14 +109,30 @@ export function CartDrawer({ open, onClose, onContinuar }: CartDrawerProps) {
     }
   }, [open, dispatch])
 
+  /*
+   * El diálogo es el papel del cajón, que es a donde va el foco y el que atrapa el
+   * tabulador. Este componente **no** le pone su propio `role="dialog"`: lo declaraba en
+   * un `Box` de dentro, y eso era un diálogo dentro de otro diálogo. Por eso el nombre
+   * tiene que ir en el papel y no en la raíz del `Drawer`, que no lo lee nadie.
+   *
+   * El nombre va por `aria-labelledby` y no con un `aria-label` fijo porque tiene que ser
+   * el texto que se ve, no una descripción parecida (WCAG 2.5.3).
+   */
   return (
-    <Drawer anchor="right" open={open} onClose={onClose} aria-label="Carrito de compras">
-      <Box sx={{ width: CART_DRAWER_WIDTH, p: 3 }} role="dialog" aria-modal="true">
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      slotProps={{ paper: { 'aria-labelledby': 'cart-drawer-title' } }}
+    >
+      <Box sx={{ width: CART_DRAWER_WIDTH, p: 3 }}>
         <Stack
           direction="row"
           sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
         >
-          <Typography variant="h6">Tu carrito</Typography>
+          <Typography id="cart-drawer-title" variant="h6">
+            Tu carrito
+          </Typography>
           <Button size="small" onClick={onClose}>
             Cerrar
           </Button>
