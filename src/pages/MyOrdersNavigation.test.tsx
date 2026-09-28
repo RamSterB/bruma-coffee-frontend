@@ -87,6 +87,6 @@ describe('el camino para llegar al historial', () => {
     await userEvent.click(screen.getByRole('link', { name: /mis órdenes/i }))
 
     // Sin recargar: la ruta existe de verdad en el enrutador.
-    await waitFor(() => expect(get).toHaveBeenCalledWith('/orders'))
+    await waitFor(() => expect(get).toHaveBeenCalledWith('/orders', { token: 'token-1' }))
   })
 })

@@ -47,7 +47,11 @@ export const fetchMyOrders = createAsyncThunk<
   }
 
   try {
-    return await httpClient.get<OrderListItem[]>('/orders')
+    // El token va aquí explícitamente: el cliente HTTP no lo busca en el store, y una
+    // petición sin cabecera de autorización vuelve con 401 aunque haya sesión.
+    return await httpClient.get<OrderListItem[]>('/orders', {
+      token: estado.auth.accessToken ?? undefined,
+    })
   } catch {
     return rejectWithValue('No pudimos cargar tus compras. Inténtalo otra vez.')
   }

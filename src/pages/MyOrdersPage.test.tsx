@@ -78,10 +78,14 @@ describe('la pagina de mis ordenes', () => {
     get.mockResolvedValue(ORDENES as never)
   })
 
-  it('pide las ordenes al backend al abrirse', async () => {
+  it('pide las ordenes CON el token de acceso, no a pelo', async () => {
     montar()
 
-    await waitFor(() => expect(get).toHaveBeenCalledWith('/orders'))
+    // Esta aserción es la que importa. Comprobar solo la ruta daba igual: una petición
+    // sin cabecera de autorización devuelve 401 y la pantalla dice que no pudo cargar,
+    // aunque la persona esté con sesión abierta. El cliente HTTP no busca el token en el
+    // store, hay que pasárselo.
+    await waitFor(() => expect(get).toHaveBeenCalledWith('/orders', { token: 'token-1' }))
   })
 
   it('lista cada orden con su numero, su estado y su total', async () => {
