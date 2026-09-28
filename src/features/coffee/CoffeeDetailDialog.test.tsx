@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
@@ -28,7 +29,9 @@ const renderDialogo = (coffee: Coffee | null) =>
         <Routes>
           <Route
             path="/"
-            element={<CoffeeDetailDialog coffee={coffee} onClose={() => undefined} />}
+            element={
+              <CoffeeDetailDialog coffee={coffee} onClose={() => undefined} onPagar={jest.fn()} />
+            }
           />
           <Route path="/cafe/:id" element={<p>ficha completa</p>} />
           <Route path="/checkout" element={<p>checkout</p>} />
@@ -81,7 +84,11 @@ describe('CoffeeDetailDialog', () => {
     render(
       <Provider store={createTestStore()}>
         <MemoryRouter>
-          <CoffeeDetailDialog coffee={buildCoffee()} onClose={() => (cerrado = true)} />
+          <CoffeeDetailDialog
+            coffee={buildCoffee()}
+            onClose={() => (cerrado = true)}
+            onPagar={jest.fn()}
+          />
         </MemoryRouter>
       </Provider>,
     )

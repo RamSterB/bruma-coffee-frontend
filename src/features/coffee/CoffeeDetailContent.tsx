@@ -1,6 +1,5 @@
 import { Button, Chip, FormControlLabel, Radio, RadioGroup, Stack, Typography } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAppDispatch } from '../../app/hooks'
 import { formatCop } from '../../lib/formatCurrency'
 import { addToCart } from '../cart/cartSlice'
@@ -49,9 +48,8 @@ export function CoffeeDetailContent({
   onPagar,
 }: {
   coffee: Coffee
-  onPagar?: (variantId: string) => void
+  onPagar: (variantId: string) => void
 }) {
-  const navegar = useNavigate()
   const despachar = useAppDispatch()
   const inicial = useMemo(() => primeraConStock(coffee.variants), [coffee.variants])
   const [varianteId, setVarianteId] = useState<string | null>(inicial?.id ?? null)
@@ -80,16 +78,7 @@ export function CoffeeDetailContent({
       return
     }
 
-    if (onPagar !== undefined) {
-      onPagar(varianteId)
-
-      return
-    }
-
-    // Sin el modal a mano, el botón sigue llevando al checkout: es el mismo
-    // destino y evita que un consumidor de este contenido se quede sin salida.
-    const parametros = new URLSearchParams({ coffee: coffee.id, variant: varianteId })
-    navegar(`/checkout?${parametros.toString()}`)
+    onPagar(varianteId)
   }
 
   return (

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from '@jest/globals'
 import { createTestStore } from '../../app/store'
 import { CoffeeDetailContent } from './CoffeeDetailContent'
@@ -31,22 +31,19 @@ const buildCoffee = (overrides: Partial<Coffee> = {}): Coffee => ({
   ...overrides,
 })
 
-/** Muestra la query de la ruta de checkout: es el contrato con el incremento F5. */
-const DestinoDeCheckout = () => {
-  const { search } = useLocation()
-
-  return <p>pantalla de checkout{search}</p>
-}
-
-const renderDetalle = (coffee: Coffee) => {
+/**
+ * El contenido ya no navega a ninguna parte: avisa de que se quiere pagar y **qué
+ * variante**. Antes construia una URL a `/checkout`, y esa ruta termino siendo una
+ * pagina que decia que el checkout no existia.
+ */
+const renderDetalle = (coffee: Coffee, onPagar: (variantId: string) => void = () => {}) => {
   const store = createTestStore()
 
   const vista = render(
     <Provider store={store}>
       <MemoryRouter initialEntries={['/']}>
         <Routes>
-          <Route path="/" element={<CoffeeDetailContent coffee={coffee} />} />
-          <Route path="/checkout" element={<DestinoDeCheckout />} />
+          <Route path="/" element={<CoffeeDetailContent coffee={coffee} onPagar={onPagar} />} />
         </Routes>
       </MemoryRouter>
     </Provider>,
@@ -120,7 +117,8 @@ describe('CoffeeDetailContent', () => {
     expect(screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i })).toBeDisabled()
   })
 
-  it('lleva al checkout con el café y la variante elegidas, sin crear la orden', async () => {
+  it('avisa de que se quiere pagar, con el café y la variante elegidas, sin crear la orden', async () => {
+    const pagado: string[] = []
     const user = userEvent.setup()
     renderDetalle(
       buildCoffee({
@@ -129,17 +127,19 @@ describe('CoffeeDetailContent', () => {
           buildVariant({ id: 'var-1000', weightGrams: 1000 }),
         ],
       }),
+      (variantId) => pagado.push(variantId),
     )
 
     await user.click(screen.getByRole('radio', { name: /1000 g/ }))
     await user.click(screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i }))
 
-    const destino = await screen.findByText(/pantalla de checkout/)
-    expect(destino).toHaveTextContent('coffee=cafe-1')
-    expect(destino).toHaveTextContent('variant=var-1000')
+    // La variante que el usuario eligio, no la primera: cobrar una que no es la que
+    // marco es el fallo mas caro que puede tener este boton.
+    expect(pagado).toEqual(['var-1000'])
   })
 
   it('lleva la variante preseleccionada cuando el usuario no cambia nada', async () => {
+    const pagado: string[] = []
     const user = userEvent.setup()
     renderDetalle(
       buildCoffee({
@@ -148,13 +148,14 @@ describe('CoffeeDetailContent', () => {
           buildVariant({ id: 'var-500', weightGrams: 500 }),
         ],
       }),
+      (variantId) => pagado.push(variantId),
     )
 
     await user.click(screen.getByRole('button', { name: /pagar con tarjeta de cr[eé]dito/i }))
 
-    const destino = await screen.findByText(/pantalla de checkout/)
-    expect(destino).toHaveTextContent('variant=var-500')
-    expect(destino).not.toHaveTextContent('var-agotada')
+    // La primera **con stock**, no la primera de la lista: una agotada no se puede
+    // comprar y cobrarla seria un fallo de inventario.
+    expect(pagado).toEqual(['var-500'])
   })
 
   it('omite la lista de notas cuando el café no tiene', () => {

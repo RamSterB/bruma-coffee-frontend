@@ -1,6 +1,5 @@
 import { Route, Routes } from 'react-router-dom'
 import { AppLayout } from '../components/AppLayout'
-import { CheckoutPage } from '../pages/CheckoutPage'
 import { CoffeeDetailPage } from '../pages/CoffeeDetailPage'
 import { HomePage } from '../pages/HomePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
@@ -16,7 +15,6 @@ export function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/cafe/:id" element={<CoffeeDetailPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
         {/* Con sesión ya abierta, la pantalla de acceso y la de registro sobran. */}
         <Route
           path="/entrar"

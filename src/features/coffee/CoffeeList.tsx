@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { Backdrop, CircularProgress, Pagination, Stack, Typography } from '@mui/material'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { ErrorState } from '../../components/ErrorState'
@@ -14,6 +15,11 @@ export function CoffeeList() {
     (state) => state.coffee,
   )
   const [openCoffee, setOpenCoffee] = useState<Coffee | null>(null)
+
+  // El modal de pago vive en el layout, asi que se pide por el contexto del Outlet, que
+  // es como lo hace la ficha del cafe. Sin esto el boton de pagar no tendria a donde
+  // llevar y caia en una pagina de un incremento anterior.
+  const contexto = useOutletContext<{ abrirPago: () => void } | null>()
 
   useEffect(() => {
     void dispatch(fetchCoffees())
@@ -76,7 +82,13 @@ export function CoffeeList() {
         </Stack>
       ) : null}
 
-      <CoffeeDetailDialog coffee={openCoffee} onClose={() => setOpenCoffee(null)} />
+      <CoffeeDetailDialog
+        coffee={openCoffee}
+        onClose={() => setOpenCoffee(null)}
+        onPagar={() => {
+          contexto?.abrirPago()
+        }}
+      />
 
       <Backdrop open={loading} data-testid="catalog-backdrop">
         <CircularProgress color="primary" aria-label="Cargando cafés" />
