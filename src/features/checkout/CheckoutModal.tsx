@@ -35,6 +35,13 @@ import {
   submitShipping,
   type ShippingData,
 } from './checkoutSlice'
+import {
+  fetchGatewayConfig,
+  fetchOrderStatus,
+  payOrder,
+  paymentReset,
+} from '../payment/paymentSlice'
+import { PaymentResult } from '../payment/PaymentResult'
 
 const CELDAS_TELEFONO = 10
 
@@ -58,6 +65,8 @@ const celdasDelTelefono = (valor: string): number =>
 export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
   const dispatch = useAppDispatch()
   const summary = useAppSelector(selectSummary)
+  const pago = useAppSelector((estado) => estado.payment)
+  const correoDeLaSesion = useAppSelector((estado) => estado.auth.user?.email ?? '')
   const { departments, cities, status, error } = useAppSelector((state) => state.checkout)
 
   const [paso, setPaso] = useState(0)
@@ -86,8 +95,14 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
     if (open) {
       setPaso(0)
       dispatch(reiniciarCheckout())
+      // El estado del pago se limpia al abrir: si el proceso anterior terminó, sus
+      // datos ya están en la orden y mostrarlos aquí sería de otra compra.
+      dispatch(paymentReset())
       void dispatch(fetchSummary())
       void dispatch(fetchDepartments())
+      // La configuración de la pasarela se pide al abrir, y no al pagar, para que el
+      // error de configuración aparezca antes de que alguien escriba su tarjeta.
+      void dispatch(fetchGatewayConfig())
     }
   }, [open, dispatch])
 
@@ -107,6 +122,8 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
     validateCvv(tarjeta.cvv) &&
     isSupportedBrand(cardBrandFromNumber(tarjeta.number))
 
+  // Tres pasos visibles: tarjeta y envío, resumen, y resultado. El resultado no es
+  // una pantalla aparte porque se abrió desde este modal y quien compra sigue aquí.
   const entregaValida =
     fullName.trim().length >= 3 &&
     documentNumber.replace(/\D/g, '').length >= 6 &&
@@ -114,6 +131,47 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
     address.trim().length >= 5 &&
     department !== '' &&
     city !== ''
+
+  const pagando = pago.status === 'tokenizing'
+
+  /**
+   * El pago, en tres pasos que no se pueden saltar: tokenizar en el navegador,
+   * crear la orden y consultar el desenlace. Si la tokenización falla **no se crea
+   * ninguna orden**, que es justo lo que evita dejar pedidos pendientes de tarjetas
+   * que nunca se pudieron cobrar.
+   */
+  const pagar = async () => {
+    if (pago.gateway === null) {
+      setAviso('La tienda no tiene configurada la pasarela de pago.')
+
+      return
+    }
+
+    const creada = await dispatch(
+      payOrder({
+        card: tarjeta,
+        shipping: {
+          fullName,
+          documentNumber,
+          phone: `57${celdasDelTelefono(phone) === CELDAS_TELEFONO ? phone.replace(/\D/g, '').slice(-CELDAS_TELEFONO) : phone.replace(/\D/g, '')}`,
+          address,
+          city,
+          department,
+        },
+        email: correoDeLaSesion,
+        gateway: pago.gateway,
+      }),
+    )
+
+    if (payOrder.rejected.match(creada)) {
+      setAviso(creada.payload ?? 'No pudimos procesar el pago')
+
+      return
+    }
+
+    setPaso(2)
+    await dispatch(fetchOrderStatus(creada.payload.id))
+  }
 
   const continuar = async (evento: FormEvent) => {
     evento.preventDefault()
@@ -167,11 +225,20 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
             <Step>
               <StepLabel>Resumen</StepLabel>
             </Step>
+            <Step>
+              <StepLabel>Resultado</StepLabel>
+            </Step>
           </Stepper>
 
           {error !== null && <Alert severity="error">{error}</Alert>}
 
-          {paso === 0 ? (
+          {paso === 2 ? (
+            <PaymentResult
+              estado={pago.finalStatus}
+              cargando={pago.status === 'waiting'}
+              onVolverAlCafe={onClose}
+            />
+          ) : paso === 0 ? (
             <Box component="form" onSubmit={continuar} noValidate>
               <Stack spacing={3}>
                 <Typography variant="subtitle1">Tarjeta</Typography>
@@ -318,14 +385,10 @@ export function CheckoutModal({ open, onClose }: CheckoutModalProps) {
               <Button
                 variant="contained"
                 fullWidth
-                disabled={cargando || vacio}
-                onClick={() => {
-                  // El cobro se resuelve en el incremento de la pasarela. Este
-                  // botón avisa en vez de fingir: se paga cuando haya pasarela.
-                  setAviso('El pago con tarjeta llega en el próximo paso.')
-                }}
+                disabled={cargando || vacio || pagando}
+                onClick={() => void pagar()}
               >
-                Pagar
+                {pagando ? 'Pagando…' : 'Pagar'}
               </Button>
             </Stack>
           )}

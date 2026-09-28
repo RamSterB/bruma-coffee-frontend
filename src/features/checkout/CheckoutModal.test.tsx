@@ -97,6 +97,10 @@ describe('CheckoutModal', () => {
     get.mockReset()
     post.mockReset()
     get.mockImplementation((async (ruta: string) => {
+      if (ruta === '/payments/config') {
+        // Tienda sin pasarela configurada: es el caso que comprueba el aviso.
+        return { publicKey: '', baseUrl: '', environment: null }
+      }
       if (ruta === '/geography/departments') {
         return departamentos
       }
@@ -164,6 +168,10 @@ describe('CheckoutModal', () => {
 
   it('el resumen dice "Envío gratis" cuando el envío es cero', async () => {
     get.mockImplementation((async (ruta: string) => {
+      if (ruta === '/payments/config') {
+        // Tienda sin pasarela configurada: es el caso que comprueba el aviso.
+        return { publicKey: '', baseUrl: '', environment: null }
+      }
       if (ruta === '/geography/departments') {
         return departamentos
       }
@@ -281,7 +289,7 @@ describe('CheckoutModal', () => {
     expect(screen.queryByText('Subtotal')).toBeNull()
   })
 
-  it('avisa que el pago todavía no está disponible en vez de fingir que cobra', async () => {
+  it('avisa si la tienda no tiene configurada la pasarela, en vez de cobrar sin poder', async () => {
     montar()
     await rellenarTarjeta()
     await rellenarEntrega()
@@ -289,8 +297,11 @@ describe('CheckoutModal', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /^pagar$/i }))
 
+    // Sin la configuración no se tokeniza nada, y sobre todo no se crea ninguna
+    // orden: un pedido pendiente que nadie puede cobrar es trabajo para alguien.
     expect(
-      await screen.findByText(/pago con tarjeta llega en el pr[oó]ximo paso/i),
+      await screen.findByText(/la tienda no tiene configurada la pasarela/i),
     ).toBeInTheDocument()
+    expect(post).not.toHaveBeenCalledWith('/orders', expect.anything())
   })
 })

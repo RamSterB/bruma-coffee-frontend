@@ -22,6 +22,12 @@ module.exports = {
   testEnvironment: '<rootDir>/jest.environment.cjs',
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
 
+  // Los tests del modal escriben siete campos con `userEvent`, que pulsa tecla por
+  // tecla, y con la suite completa en paralelo se queda sin tiempo de CPU. Con los 5 s de
+  // Jest por defecto fallan tests que pasan en solitario, y ese tipo de fallo
+  // intermitente por lentitud es peor que ningún test: entrena a ignorar los rojos.
+  testTimeout: 20000,
+
   // Se usa `babel-jest` y no un transformador de TypeScript por tres motivos, todos
   // comprobados durante la migración y no supuestos:
   //
