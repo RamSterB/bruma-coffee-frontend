@@ -164,8 +164,20 @@ el cobro fuera otro.
 modal está abierto y no se escribe en `localStorage`, ni en `sessionStorage`, ni
 sale en ninguna petición al backend. Al recargar hay que volver a escribirlo.
 
-Todavía **no** hay cobro: el botón de pagar avisa de que la pasarela llega en el
-siguiente incremento, en vez de fingir que cobra.
+4. Al pagar, la tarjeta se **tokeniza en el navegador** y se crea la orden. 5. El
+   **resultado**: número de orden, total y si el envío ya está creado, con un botón
+   para volver al café.
+
+**El número de tarjeta no sale del navegador.** La tokenización la hace la pasarela
+con la llave pública, que es la única credencial que puede ir en el cliente; a
+nosotros solo llega el **token**. El número no se persiste ni se envía.
+
+**La configuración de la pasarela la pide el navegador al backend** al abrir el modal,
+y no viene compilada en el bundle: así un mismo build sirve para los dos ambientes y no
+puede pasar que se tokenice en un sitio y se cobre en otro. Si la tienda no la tiene, el
+pago avisa en vez de crear una orden que nadie puede cobrar.
+
+Todavía **no** hay cobro real: el backend de la pasarela está en su propia PR.
 
 ## Acceso desde Windows
 

@@ -4,6 +4,7 @@ import { coffeeDetailSlice } from '../features/coffee/coffeeDetailSlice'
 import { coffeeSlice } from '../features/coffee/coffeeSlice'
 import { clearSavedCart, loadCart, saveCart } from '../features/cart/cartStorage'
 import { authReducer, restoreSession, signIn, signOut } from '../features/auth/authSlice'
+import { paymentReducer } from '../features/payment/paymentSlice'
 import { checkoutReducer } from '../features/checkout/checkoutSlice'
 import { clearCart, syncLocalCartOnSignIn } from '../features/cart/cartSlice'
 
@@ -11,6 +12,7 @@ export const rootReducer = combineSlices(coffeeSlice, coffeeDetailSlice, {
   cart: cartReducer,
   auth: authReducer,
   checkout: checkoutReducer,
+  payment: paymentReducer,
 })
 
 /**
