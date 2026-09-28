@@ -21,28 +21,47 @@ import { useAppSelector } from './hooks'
  * tercer estado además de "con sesión" y "sin sesión", y en ese estado no se hace nada.
  */
 
-/** Where to send someone who needs a session. */
+/** A donde va quien necesita sesion. Y tambien quien no tiene el rol: ver `RutaPrivada`. */
 export const RUTA_DE_ACCESO = '/entrar'
 
-/** Where to send someone who already has one. */
-export const RUTA_DE_CUENTA = '/cuenta'
+/** A donde va quien ya tiene sesion y ha entrado a la de acceso. La portada, que es donde se compra. */
+export const RUTA_PUBLICA_POR_DEFECTO = '/'
 
 /**
- * Solo para pantallas que necesitan sesión. Mientras no se sepa si la hay, no se
- * renderiza nada: mejor un instante en blanco que un empujón a la pantalla de acceso
- * que después hay que deshacer.
+ * Para pantallas privadas, y opcionalmente para un rol concreto.
+ *
+ * **Sin sesión y sin el rol se va al mismo sitio, y ese detalle es el importante.**
+ *
+ * Lo tentador es diferenciarlos: un 403 para quien tiene sesión pero no el rol, que es
+ * lo que hace un servidor. En el cliente es un error, por dos razones.
+ *
+ * La primera es que **un 404 afirma que la pantalla no existe**, y aquí sí que existe:
+ * acaba de sugerir que se vaya a entrar, lo cual le da la pista de que hay algo detrás.
+ * Y la segunda es práctica: quien no tiene el rol tampoco puede iniciar sesión con una
+ * cuenta que sí lo tenga, así que mandarle a la pantalla de acceso lo devuelve a la
+ * portada. Acaba en un sitio donde puede comprar, que es lo que quería, en vez de en un
+ * callejón sin salida.
+ *
+ * Y no se renderiza el contenido antes de redirigir, ni un instante: un parpadeo
+ * revela que la pantalla existe.
+ *
+ * Mientras no se sepa si hay sesión, no se hace nada. Ver la nota de arriba: antes de
+ * saberlo, expulsar a quien sí la tiene es el fallo más caro que puede tener esta guarda.
  */
-export function RutaPrivada({ children }: { children: ReactNode }) {
+export function RutaPrivada({ children, rol }: { children: ReactNode; rol?: string }) {
   const status = useAppSelector((estado) => estado.auth.status)
+  const rolDeLaSesion = useAppSelector((estado) => estado.auth.user?.role)
   const navegar = useNavigate()
 
+  const sinPermiso = status === 'autenticada' && rol !== undefined && rolDeLaSesion !== rol
+
   useEffect(() => {
-    if (status === 'anonima') {
+    if (status === 'anonima' || sinPermiso) {
       navegar(RUTA_DE_ACCESO, { replace: true })
     }
-  }, [status, navegar])
+  }, [status, sinPermiso, navegar])
 
-  if (status !== 'autenticada') {
+  if (status !== 'autenticada' || sinPermiso) {
     return null
   }
 
@@ -61,7 +80,7 @@ export function RutaPublica({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (status === 'autenticada') {
-      navegar(RUTA_DE_CUENTA, { replace: true })
+      navegar(RUTA_PUBLICA_POR_DEFECTO, { replace: true })
     }
   }, [status, navegar])
 

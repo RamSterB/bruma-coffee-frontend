@@ -93,18 +93,29 @@ describe('quien ya tiene sesion y entra a la pantalla de entrar', () => {
     get.mockResolvedValue({ items: [] } as never)
   })
 
-  it('le lleva a su cuenta, no a un formulario que no necesita', async () => {
+  it('le lleva a la portada, no a un formulario que no necesita', async () => {
     montarEn('/entrar', conSesion())
 
     // Un formulario de acceso para quien ya esta dentro es una pantalla que no explica
-    // por que aparece, y el inviting a volver a escribir su contrasena.
-    expect(await screen.findByRole('heading', { name: /mi cuenta/i })).toBeInTheDocument()
+    // por que aparece, y ademas invita a volver a escribir la contrasena. La portada
+    // es donde se va a comprar, que es lo que esa persona iba a hacer.
+    expect(await screen.findByRole('heading', { name: /bruma coffee/i })).toBeInTheDocument()
   })
 
-  it('el registro tambien', async () => {
+  it('el registro tambien, a la misma portada', async () => {
     montarEn('/registro', conSesion())
 
-    expect(await screen.findByRole('heading', { name: /mi cuenta/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /bruma coffee/i })).toBeInTheDocument()
+  })
+
+  it('no le deja quedarse en la pantalla de acceso, que no se sabe si escribio a mano', async () => {
+    montarEn('/entrar', conSesion())
+
+    // Ni un instante con el formulario a la vista. En la practica es un parpadeo, pero
+    // alguien que llega recargando la ve el destello y parece que la pagina cambio.
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /iniciar sesión/i })).toBeNull(),
+    )
   })
 })
 
