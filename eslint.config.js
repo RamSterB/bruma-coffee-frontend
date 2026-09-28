@@ -3,7 +3,10 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  // `cloudfront/` no es codigo de la aplicacion: son las funciones que ejecuta el
+  // servicio de CDN. La de la tienda declara un `handler` que el runtime invoca, y a
+  // eslint le parece una variable sin usar porque nadie la llama desde el codigo.
+  { ignores: ['dist', 'cloudfront/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
