@@ -122,4 +122,16 @@ describe('AccountPage', () => {
 
     expect(screen.getByRole('link', { name: /iniciar sesi[oó]n/i })).toBeInTheDocument()
   })
+
+  it('ofrece un enlace a las ordenes, que es donde se ve lo comprado', async () => {
+    // Un historial sin entrada es una pantalla que nadie encuentra.
+    const store = createTestStore({ auth: undefined })
+    store.dispatch(sesionRestaurada(sesion))
+    montar(store)
+
+    expect(screen.getByRole('link', { name: /mis órdenes/i })).toHaveAttribute(
+      'href',
+      '/mis-ordenes',
+    )
+  })
 })

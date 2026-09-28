@@ -7,6 +7,7 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { SignInPage } from '../pages/SignInPage'
 import { SignUpPage } from '../pages/SignUpPage'
 import { AccountPage } from '../pages/AccountPage'
+import { MyOrdersPage } from '../pages/MyOrdersPage'
 
 export function AppRoutes() {
   return (
@@ -18,6 +19,7 @@ export function AppRoutes() {
         <Route path="/entrar" element={<SignInPage />} />
         <Route path="/registro" element={<SignUpPage />} />
         <Route path="/cuenta" element={<AccountPage />} />
+        <Route path="/mis-ordenes" element={<MyOrdersPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

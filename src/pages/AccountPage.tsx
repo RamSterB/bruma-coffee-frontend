@@ -59,6 +59,10 @@ export function AccountPage() {
           </Alert>
         )}
 
+        <Button component={RouterLink} to="/mis-ordenes" variant="outlined">
+          Mis órdenes
+        </Button>
+
         <Button onClick={cerrarSesion} variant="outlined">
           Cerrar sesión
         </Button>
