@@ -180,6 +180,42 @@ describe('CheckoutModal pagando', () => {
     expect(tokenizar).toHaveBeenCalledTimes(1)
   })
 
+  it('vuelve a preguntar por el veredicto mientras la pasarela no se decide', async () => {
+    // **La orden nace en PENDING y la pasarela tarda unos segundos.** Preguntar una sola
+    // vez, en el acto, devuelve PENDING casi siempre, y la compra se queda colgada en
+    // "confirmando tu pago" aunque se apruebe a los cinco segundos. Se comprueba que
+    // vuelve a preguntar, y que deja de hacerlo en cuanto hay veredicto.
+    montar()
+    await waitFor(() => expect(get).toHaveBeenCalledWith('/payments/config'))
+    await rellenar()
+    await irAlResumen()
+
+    let consultas = 0
+    get.mockImplementation((ruta: string): Promise<never> => {
+      if (ruta.includes('/orders/')) {
+        consultas += 1
+
+        return Promise.resolve({
+          id: 'orden-1',
+          orderNumber: 'BC-20260927-0001',
+          status: consultas < 3 ? 'PENDING' : 'PAID',
+          paymentStatus: consultas < 3 ? 'PENDING' : 'APPROVED',
+          total: 109960,
+          delivery: null,
+        }) as never
+      }
+
+      return Promise.resolve(DESGLOSE) as never
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: /^pagar$/i }))
+
+    await waitFor(() => expect(screen.getByText(/pago aprobado/i)).toBeInTheDocument(), {
+      timeout: 15000,
+    })
+    expect(consultas).toBeGreaterThanOrEqual(3)
+  }, 25000)
+
   it('el celular va como lo escribe quien compra, sin anteponer el indicativo', async () => {
     // **El backend exige diez dígitos empezando por 3.** Antponer el `57` lo convertía en
     // doce y el servidor rechazaba la orden con un 400 en el mensaje, que es la ultima
