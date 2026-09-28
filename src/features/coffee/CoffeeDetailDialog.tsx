@@ -12,9 +12,11 @@ import type { Coffee } from './types'
 export function CoffeeDetailDialog({
   coffee,
   onClose,
+  onPagar,
 }: {
   coffee: Coffee | null
   onClose: () => void
+  onPagar: (variantId: string) => void
 }) {
   return (
     <Dialog open={coffee !== null} onClose={onClose} maxWidth="sm" fullWidth>
@@ -31,7 +33,7 @@ export function CoffeeDetailDialog({
 
           <DialogContent>
             <Stack spacing={2}>
-              <CoffeeDetailContent coffee={coffee} />
+              <CoffeeDetailContent coffee={coffee} onPagar={onPagar} />
 
               <Link to={`/cafe/${coffee.id}`} className="text-sm text-amber-400 underline">
                 Ver ficha completa

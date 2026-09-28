@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals'
+import { describe, expect, it, jest } from '@jest/globals'
 import { render, screen } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
@@ -33,7 +33,7 @@ const montar = () =>
   render(
     <Provider store={createTestStore()}>
       <MemoryRouter>
-        <CoffeeDetailContent coffee={CAFE_AGOTADO} />
+        <CoffeeDetailContent coffee={CAFE_AGOTADO} onPagar={jest.fn()} />
       </MemoryRouter>
     </Provider>,
   )

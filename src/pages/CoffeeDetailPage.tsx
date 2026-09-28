@@ -82,10 +82,7 @@ export function CoffeeDetailPage() {
           </Link>
         </header>
 
-        <CoffeeDetailContent
-          coffee={item}
-          onPagar={contexto === null ? undefined : () => contexto.abrirPago()}
-        />
+        <CoffeeDetailContent coffee={item} onPagar={() => contexto?.abrirPago()} />
       </Stack>
     </main>
   )
