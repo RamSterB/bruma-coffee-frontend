@@ -70,7 +70,11 @@ describe('el camino para llegar al historial', () => {
     store.dispatch(sesionRestaurada(SESION))
     montar(store)
 
-    await userEvent.click(screen.getByRole('link', { name: /mis órdenes/i }))
+    // La ruta llega en su trozo a demanda, asi que el enlace aparece un instante
+    // despues. Esperarlo no es un rodeo: es el comportamiento que acabamos de anadir.
+    const enlace = await screen.findByRole('link', { name: /mis órdenes/i })
+
+    await userEvent.click(enlace)
 
     // Dos rutas de verdad, no dos pantallas montadas a la vez: si esto pasara con la
     // cuenta siempre en el DOM, el clic no estaría probando nada.
@@ -79,12 +83,28 @@ describe('el camino para llegar al historial', () => {
     expect(await screen.findByText('BC-20260920-0001')).toBeInTheDocument()
   })
 
+  it('el enlace existe en la pagina de la cuenta, y la pagina de la cuenta no se queda a medias', async () => {
+    const store = createTestStore({ auth: undefined })
+    store.dispatch(sesionRestaurada(SESION))
+    montar(store)
+
+    await screen.findByRole('link', { name: /mis órdenes/i })
+
+    // El indicador de carga tiene que desaparecer: si se queda, la pantalla esta a
+    // medias y parece que la cuenta no carga.
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
   it('la URL es la de /mis-ordenes, no una pantalla que solo se vea mientras se navega', async () => {
     const store = createTestStore({ auth: undefined })
     store.dispatch(sesionRestaurada(SESION))
     montar(store)
 
-    await userEvent.click(screen.getByRole('link', { name: /mis órdenes/i }))
+    // La ruta llega en su trozo a demanda, asi que el enlace aparece un instante
+    // despues. Esperarlo no es un rodeo: es el comportamiento que acabamos de anadir.
+    const enlace = await screen.findByRole('link', { name: /mis órdenes/i })
+
+    await userEvent.click(enlace)
 
     // Sin recargar: la ruta existe de verdad en el enrutador.
     await waitFor(() => expect(get).toHaveBeenCalledWith('/orders', { token: 'token-1' }))
