@@ -1,7 +1,6 @@
-import { Box, Stack, TextField, Typography } from '@mui/material'
-import CreditCardIcon from '@mui/icons-material/CreditCard'
+import { Stack, TextField, Typography } from '@mui/material'
+import { CardVisual } from './CardVisual'
 import { useState } from 'react'
-import type { CardBrand } from '../../lib/cardValidation'
 import {
   cardBrandFromNumber,
   formatCardNumber,
@@ -9,6 +8,7 @@ import {
   validateCard,
   validateCvv,
   validateExpiry,
+  formatExpiry,
 } from '../../lib/cardValidation'
 
 export interface CardFormValues {
@@ -26,18 +26,6 @@ export interface CardFormProps {
   disabled?: boolean
 }
 
-const NOMBRES: Record<CardBrand, string> = {
-  VISA: 'Visa',
-  MASTERCARD: 'Mastercard',
-  DESCONOCIDA: 'Tarjeta',
-}
-
-const COLOR_POR_MARCA: Record<CardBrand, string> = {
-  VISA: '#1A1F71',
-  MASTERCARD: '#EB001B',
-  DESCONOCIDA: 'rgba(0, 0, 0, 0.54)',
-}
-
 /**
  * El logo cambia con los primeros dígitos, que es lo único que se conoce de una
  * tarjeta mientras se escribe. Se calcula antes de que el número sea válido a
@@ -52,6 +40,9 @@ export function CardForm({ values, onChange, onInvalid, disabled = false }: Card
   const cambiar = (campo: keyof CardFormValues, valor: string) => {
     const siguiente = { ...values, [campo]: valor }
 
+    // Cada campo se formatea en su propio manejador: el número por grupos de cuatro
+    // y el vencimiento con la barra. Si se formateara todo aquí, el vencimiento
+    // heredaría el agrupado del número.
     onChange(campo === 'number' ? { ...siguiente, number: formatCardNumber(valor) } : siguiente)
 
     // El aviso sale al salir del campo, no mientras se escribe: saltaría en cada
@@ -67,23 +58,9 @@ export function CardForm({ values, onChange, onInvalid, disabled = false }: Card
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-        <Box
-          aria-label={`Tarjeta ${NOMBRES[marca]}`}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            color: COLOR_POR_MARCA[marca],
-            transition: 'color 120ms',
-          }}
-        >
-          <CreditCardIcon fontSize="small" />
-          <Typography variant="caption" sx={{ fontWeight: 600 }}>
-            {NOMBRES[marca]}
-          </Typography>
-        </Box>
-      </Stack>
+      {/* La tarjeta dibujada va **encima** de los campos, no al lado: es lo que
+          convierte una pantalla de formulario en una pantalla de pago. */}
+      <CardVisual values={values} brand={marca} />
 
       {tocado && !soportada && (
         <Typography variant="caption" color="error" role="alert">
@@ -123,7 +100,7 @@ export function CardForm({ values, onChange, onInvalid, disabled = false }: Card
         <TextField
           label="Vence (MM/AA)"
           value={values.expiry}
-          onChange={(evento) => cambiar('expiry', evento.target.value)}
+          onChange={(evento) => cambiar('expiry', formatExpiry(evento.target.value))}
           onBlur={() => {
             setTocado(true)
 

@@ -50,20 +50,22 @@ describe('CardForm', () => {
     )
   })
 
-  it('el logo dice Visa en cuanto se escriben los primeros dígitos', async () => {
+  it('la tarjeta dibujada enseña el logo de Visa en cuanto se escriben los primeros dígitos', async () => {
     montar()
 
     await userEvent.type(screen.getByLabelText(/n[uú]mero de tarjeta/i), '4')
 
-    expect(await screen.findByLabelText('Tarjeta Visa')).toBeInTheDocument()
+    // El logo es una imagen, así que su nombre va en el aria-label del propio SVG:
+    // es la única forma de que el dato siga disponible para quien no ve la imagen.
+    expect(await screen.findByRole('img', { name: 'Visa' })).toBeInTheDocument()
   })
 
-  it('el logo dice Mastercard en cuanto se escriben los primeros dígitos', async () => {
+  it('la tarjeta dibujada enseña el logo de Mastercard en cuanto se escriben los primeros dígitos', async () => {
     montar()
 
     await userEvent.type(screen.getByLabelText(/n[uú]mero de tarjeta/i), '55')
 
-    expect(await screen.findByLabelText('Tarjeta Mastercard')).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: 'Mastercard' })).toBeInTheDocument()
   })
 
   it('avisa que una tarjeta inválida no es válida, sin vaciar lo escrito', async () => {
@@ -121,5 +123,35 @@ describe('CardForm', () => {
     await userEvent.tab()
 
     expect(onInvalid).toHaveBeenCalledWith(expect.stringContaining('3 dígitos'))
+  })
+})
+
+describe('el campo de vencimiento', () => {
+  it('pone la barra sola al escribir el año, sin teclearla', async () => {
+    montar()
+
+    await userEvent.type(screen.getByLabelText(/vence/i), '1230')
+
+    expect(screen.getByLabelText(/vence/i)).toHaveValue('12/30')
+  })
+
+  it('no deja escribir un quinto dígito', async () => {
+    montar()
+
+    await userEvent.type(screen.getByLabelText(/vence/i), '12300')
+
+    expect(screen.getByLabelText(/vence/i)).toHaveValue('12/30')
+  })
+
+  it('deja borrar el año y volver a escribirlo', async () => {
+    montar()
+    const campo = screen.getByLabelText(/vence/i)
+    await userEvent.type(campo, '1230')
+
+    await userEvent.type(campo, '{backspace}{backspace}')
+
+    // Si la barra se quedara al borrar, el segundo dígito del mes no se podría
+    // quitar nunca y el campo parecería roto.
+    expect(campo).toHaveValue('12')
   })
 })

@@ -80,6 +80,32 @@ export const formatCardNumber = (valor: string): string => {
   return digitos.replace(/(.{4})/g, '$1 ').trim()
 }
 
+/**
+ * El vencimiento se escribe con cuatro dígitos y la barra puesta, sin que nadie la
+ * tenga que teclear: mes, barra, año.
+ *
+ * El corte a **cuatro** dígitos está aquí y no solo en el `maxLength` del input. Con
+ * un `maxLength` de cinco y sin formatear, se podían escribir cinco dígitos y el
+ * valor se quedaba ahí: la validación nunca lo aceptaba, pero el campo lo mostraba
+ * como si valiera, y quien escribía no entendía por qué le rechazaban la compra.
+ *
+ * La barra se quita sola si se borra el dígito del mes que la puso, porque un hueco
+ * raro en medio del campo hace que ya no parezca un campo de cuatro dígitos.
+ */
+export const formatExpiry = (valor: string): string => {
+  const digitos = digitosDe(valor).slice(0, 4)
+  const mes = digitos.slice(0, 2)
+  const anio = digitos.slice(2, 4)
+
+  // La barra aparece cuando entra el primer dígito del año, **no** al cerrar el mes.
+  // Si se añadiera al cerrar el mes, el campo quedaría en "12/" y borrar wouldn't
+  // funcionaría: al pulsar la flecha de atrás el valor vuelve a ser "12", el
+  // formateo vuelve a poner la barra, y quien está escribiendo no puede quitar el
+  // segundo dígito del mes ni aunque lo intente muchas veces. Con la barra pendiente
+  // el borrado funciona: "12/3" -> "12" -> "1".
+  return anio.length > 0 ? `${mes}/${anio}` : mes
+}
+
 const MESES_VALIDOS = Array.from({ length: 12 }, (_, indice) => indice + 1)
 
 /**

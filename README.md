@@ -147,11 +147,19 @@ datos de entrega, y después el resumen con el botón de pago. Al revés se ve e
 total antes de poder corregir nada de lo que lo produce.
 
 1. La ficha del producto tiene **Pagar con tarjeta de crédito**, que abre el modal.
-2. En el modal: **tarjeta y envío**. La tarjeta se valida con el algoritmo de Luhn y
-   la marca se detecta por los primeros dígitos, así que el logo dice Visa o
-   Mastercard desde el primer número. Se aceptan espacios y guiones porque así es
-   como lo escribe la gente. Un aviso de tarjeta inválida **no borra** lo que ya
-   se escribió.
+2. En el modal: **tarjeta y envío**. Encima de los campos hay una **tarjeta
+   dibujada** —con forma, chip, gradiente por marca, titular y los últimos cuatro
+   dígitos— que se redibuja mientras se escribe, y no un campo de texto más. El
+   nombre de la marca va **escrito** al lado, no solo como color ni como icono: el
+   color no lo lee todo el mundo. La tarjeta se valida con el algoritmo de Luhn y
+   la marca se detecta por los primeros dígitos. Se aceptan espacios y guiones
+   porque así es como lo escribe la gente, y un aviso de tarjeta inválida **no
+   borra** lo que ya se escribió.
+
+   **El número completo no aparece en el dibujo**, ni en el texto ni en el nombre
+   accesible. Se muestran los últimos cuatro, que es lo justo para distinguir una
+   tarjeta de otra. El PAN sigue viviendo solo en el estado en memoria del modal.
+
 3. Al validar, el **resumen**: productos, subtotal, envío, IVA del 19 % y total, con
    el botón de pago. Si el envío quedó gratis, dice "Envío gratis" y no un cero,
    que parece un error de cálculo.
