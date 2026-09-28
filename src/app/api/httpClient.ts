@@ -1,4 +1,5 @@
 import { ApiError } from './ApiError'
+import { origenDeLaApi } from './apiOrigin'
 
 const API_PREFIX = '/api'
 const NETWORK_ERROR_STATUS = 0
@@ -17,8 +18,18 @@ export interface RequestOptions {
 /** Nombre de la cookie que el backend deja legible a propósito, junto a la httpOnly. */
 export const CSRF_COOKIE = 'csrf_token'
 
-const buildUrl = (path: string): string =>
-  `${API_PREFIX}${path.startsWith('/') ? path : `/${path}`}`
+/**
+ * La ruta, con el origen delante solo si hay uno configurado.
+ *
+ * Sin origen (desarrollo) queda `/api/...` y lo traduce el proxy. Con origen
+ * (produccion) queda la direccion de la API, porque alli la tienda y la API no
+ * comparten dominio. Ver `apiOrigin.ts` para por que es obligatorio separarlos.
+ */
+const buildUrl = (path: string): string => {
+  const ruta = path.startsWith('/') ? path : `/${path}`
+
+  return `${origenDeLaApi()}${API_PREFIX}${ruta}`
+}
 
 /**
  * Lee el valor de una cookie desde `document.cookie`. Devuelve `null` si no está,
