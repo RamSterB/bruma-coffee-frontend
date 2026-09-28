@@ -27,6 +27,13 @@ const FALTAN_DATOS = 'Faltan COMPRA_CORREO, COMPRA_CONTRASENA o COMPRA_TARJETA.'
 /** El café con el que se compra. Va por nombre para que el fallo diga cuál se agotó. */
 const CAFE = process.env.COMPRA_CAFE ?? 'Castillo del Tolima'
 
+/**
+ * La variante que se compra y se comprueba. Va por peso y no "la que esté marcada" a
+ * propósito: la ficha marca siempre la primera con stock, y comparar una antes y otra
+ * después puede acabar comparando dos productos distintos.
+ */
+const PESO = '500 g'
+
 const abrirCatalogo = async (page: Page) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: /bruma coffee/i })).toBeVisible()
@@ -152,14 +159,19 @@ const contarCarrito = async (page: Page): Promise<number> => {
 }
 
 /**
- * Las unidades que quedan de la variante elegida.
+ * Las unidades que quedan de una variante, dicha por su peso.
+ *
+ * Hay que decir **cuál**, y no leer la que esté marcada: la ficha marca siempre la primera
+ * con stock, así que leer "la marcada" antes y después puede ser un peso distinto y
+ * comparar dos números que no son del mismo producto. Aquí se compra y se comprueba la
+ * misma, que es lo único que hace que la comparación signifique algo.
  *
  * El texto se lee de la etiqueta que envuelve al botón, y no del botón: un `input` no
  * tiene texto propio, así que leerlo devuelve siempre cadena vacía.
  */
-const leerStockDeLaVarianteElegida = async (page: Page): Promise<number> => {
+const leerStockDe = async (page: Page, peso: string): Promise<number> => {
   const etiqueta = await page
-    .getByRole('radio', { checked: true })
+    .getByRole('radio', { name: new RegExp(`^${peso}\\b`) })
     .evaluate((boton) => boton.closest('label')?.textContent ?? '')
   const encontrado = etiqueta?.match(/(\d+)\s+disponibles/)
 
@@ -212,7 +224,9 @@ test('3. la compra llega al resumen, se cobra y vuelve al producto con el stock 
   // El stock se lee con la ficha abierta, **no dentro del proceso de compra**: ese modal
   // sustituye a la ficha, así que una vez dentro ya no hay ninguna variante marcada.
   await abrirVistaRapida(page)
-  const stockAntes = await leerStockDeLaVarianteElegida(page)
+  // Se compra y se comprueba la misma variante, y se dice cuál es: la 500 g, que es la
+  // que el recorrido usa siempre y no se agota.
+  const stockAntes = await leerStockDe(page, PESO)
 
   // Primero al carrito, y después a pagar, que es el orden de verdad: no se puede pagar lo
   // que no está en el carrito, y con el carrito vacío el proceso dice que está vacío.
@@ -249,5 +263,5 @@ test('3. la compra llega al resumen, se cobra y vuelve al producto con el stock 
   // verdad que el cobro llegó al servidor: todo lo anterior puede fallar con bastante
   // elegancia y aun así no haberse cobrado nada. Y se lee de la variante que quedó
   // marcada, que es la que se compró, y no de la primera de la lista.
-  await expect.poll(() => leerStockDeLaVarianteElegida(page)).toBe(stockAntes - 1)
+  await expect.poll(() => leerStockDe(page, PESO)).toBe(stockAntes - 1)
 })
